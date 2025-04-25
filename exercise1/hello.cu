@@ -1,12 +1,12 @@
 #include <stdio.h>
 
 __global__ void helloWorld(void){
-    printf("Hello World frorm GPU!\n");
+    printf("Hello World from GPU!\n");
 }
 
 void helloFromGPU(dim3 grid, dim3 block){
     helloWorld<<<grid, block>>>();
-    cudaDeviceSynchronize();
+    //cudaDeviceSynchronize();
 }
 
 void helloFromCPU(void){
