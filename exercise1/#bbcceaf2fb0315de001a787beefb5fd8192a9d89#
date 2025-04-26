@@ -20,8 +20,6 @@ int main(void) {
 
     // exercise 1-2: see if cudaDeviceReset() makes difference
     // resources e.g. memory won't be released if cudaDeviceReset() were not called here:
-    CHECK(cudaDeviceReset());
-
-
+    CHECK(cudaDeviceReset());    
     return 0;
 }

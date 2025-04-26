@@ -18,16 +18,18 @@ SRC = $(EXERCISE)/*.cu
 
 # Compiler and flags
 NVCC = nvcc
-NVCC_FLAGS = -O2
+NVCC_FLAGS =
 
 # Dynamically set flags based on EXERCISE
 # note that NVCC_FLAGS = -O2 -D$(EXERCISE) can be an option, too..
-#ifeq ($(EXERCISE),exercise1)
-#    NVCC_FLAGS = -O2 -DEXERCISE1
-#endif
-#ifeq ($(EXERCISE),exercise2)
-#    NVCC_FLAGS = -O2 -DEXERCISE2
-#endif
+
+# exercise 1-4: -arch sm_20 was for Fermi architecture. If this is not specified, it sets to sm_52 default value.
+ifeq ($(EXERCISE),exercise1)
+    NVCC_FLAGS =
+endif
+ifeq ($(EXERCISE),exercise2)
+    NVCC_FLAGS =
+endif
 
 # Default target
 # $@ = main (the target on the left of the colon)
