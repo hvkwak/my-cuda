@@ -1,6 +1,7 @@
 #include "../common/common.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include <ctime>
 
 /*
  * This example demonstrates a simple vector sum on the GPU and on the host.
@@ -113,10 +114,20 @@ int main(int argc, char **argv)
     CHECK(cudaMemcpy(d_B, h_B, nBytes, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_C, gpuRef, nBytes, cudaMemcpyHostToDevice));
 
+    // exercise 2-1: compare the result with the execution configuration of
+    //               block.x = 1023, 1024
+    //               if block.x = 1023, blockDim.x = 16401
+    //               if block.x = 1024, blockDim.x = 16384
+    //               The main difference is the blockDim.x. If there are more
+    //               threads in a block, less thread blocks are needed.
+    //               block.x = 1023 turns out to be quite waste of threads
+    //               due to the waste of leftover 1000+ idle threads
+    //               that are filtered at
+    //               if (i < N) C[i] = A[i] + B[i] @ sumArraysOnGPU
     // invoke kernel at host side
-    int iLen = 512;
+    int iLen = 1023;
     dim3 block (iLen);
-    dim3 grid  ((nElem + block.x - 1) / block.x);
+    dim3 grid  ((nElem + block.x - 1) / block.x); // truncated
 
     iStart = seconds();
     sumArraysOnGPU<<<grid, block>>>(d_A, d_B, d_C, nElem);
