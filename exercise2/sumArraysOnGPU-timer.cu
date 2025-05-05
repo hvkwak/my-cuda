@@ -59,7 +59,23 @@ __global__ void sumArraysOnGPU(float *A, float *B, float *C, const int N)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (i < N) C[i] = A[i] + B[i];
+    if (i < N){
+        C[i] = A[i] + B[i];
+    }
+}
+
+__global__ void sumArraysOnGPU_cycling(float *A, float *B, float *C, const int N){
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int offset = N/2;
+    if (i < offset) {
+      C[i] = A[i] + B[i];
+      C[i + offset] = A[i + offset] + B[i + offset];
+    }
+}
+
+__global__ void sumArraysOnGPU_neighbor(float *A, float *B, float *C, const int N, const int offset, const bool isEven){
+    // TODO: implementieren!q
 }
 
 int main(int argc, char **argv)
@@ -94,7 +110,7 @@ int main(int argc, char **argv)
     initialData(h_B, nElem);
     iElaps = seconds() - iStart;
     printf("initialData Time elapsed %f sec\n", iElaps);
-    memset(hostRef, 0, nBytes);
+    memset(hostRef, 0, nBytes); // sets all bytes to zero.
     memset(gpuRef,  0, nBytes);
 
     // add vector at host side for result checks
@@ -135,6 +151,25 @@ int main(int argc, char **argv)
     iElaps = seconds() - iStart;
     printf("sumArraysOnGPU <<<  %d, %d  >>>  Time elapsed %f sec\n", grid.x,
            block.x, iElaps);
+
+    //
+    // exercise 2-2: set block.x = 256, and let each thread handle two elements
+    // here we test two more functions: sumArraysOnGPU_cycle(), sumArraysOnGPU_neighbor()
+    // sumArraysOnGPU_cycle() allows each thread handle two elements in cycling manner
+    // sumArraysOnGPU_neighbor() allows each thread handle two elements consecutively
+    //
+    iLen = 256;
+    block = (iLen);
+    grid = ((nElem + block.x - 1) / block.x);
+
+    iStart = seconds();
+    sumArraysOnGPU_cycling<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem/2, true); // TODO: keep it general
+    CHECK(cudaDeviceSynchronize());
+    iElaps = seconds() - iStart;
+    printf("sumArraysOnGPU <<<  %d, %d  >>>  Time elapsed %f sec\n", grid.x,
+           block.x, iElaps);
+
+
 
     // check kernel error
     CHECK(cudaGetLastError()) ;

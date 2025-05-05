@@ -16,9 +16,16 @@ if [[ $TERM == "dumb" ]]; then
 fi
 EOF
 
+# add nvcc in .profile
+echo '# add nvcc ' >> ~/.profile
+cat << 'EOF' >> ~/.profile
+export PATH=/usr/local/cuda/bin:$PATH
+EOF
+
 # setup git
 git config --global user.email "hyovin.kwak@tu-dortmund.de"
 git config --global user.name "Hyovin Kwak"
 
 # install clangd to enable lsp-mode
 sudo apt install clangd
+#sudo apt install libtool libvterm-dev
