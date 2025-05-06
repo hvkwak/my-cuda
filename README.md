@@ -10,3 +10,4 @@ make EXERCISE=exercise1
 
 ## Exercise Descriptions
 * exercise1: Hello World from GPU. Basic CUDA API calls such as `cudaDeviceReset()`, `cudaDeviceSynchronize()`. Execution based on threadID `threadIdx`. Intro to CUDA online document `CUDA Compiler Driver NVCC`: supported files, gpu-architecture flags, or optimization levels, etc.
+* exercise2: Different execution configuration of `sumArraysOnGPU-timer.cu` to check the difference and reason. Several executions including execution configuration, two elements handling of each thread @ `sumMatrixOnGPU-2D-grid-2D-block.cu`, `sumMatrixOnGPU-2D-grid-1D-block.cu`. Checking maximum size supported by the system for each grid and block dimension @ `checkDeviceInfor.cu`.

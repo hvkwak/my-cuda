@@ -134,14 +134,18 @@ int main(int argc, char **argv)
 
     // exercise 2-1: compare the result with the execution configuration of
     //               block.x = 1023, 1024
-    //               if block.x = 1023, blockDim.x = 16401
-    //               if block.x = 1024, blockDim.x = 16384
-    //               The main difference is the blockDim.x. If there are more
-    //               threads in a block, less thread blocks are needed.
-    //               block.x = 1023 turns out to be quite waste of threads
-    //               due to the waste of leftover 1000+ idle threads
-    //               that are filtered at
-    //               if (i < N) C[i] = A[i] + B[i] @ sumArraysOnGPU
+    //
+    // if block.x = 1023, blockDim.x = 16401
+    // if block.x = 1024, blockDim.x = 16384
+    // The main difference is the blockDim.x. If there are more
+    // threads in a block, less thread blocks are needed.
+    // block.x = 1023 turns out to be quite waste of threads
+    // due to the waste of leftover 1000+ idle threads
+    // that are filtered at
+    // if (i < N) C[i] = A[i] + B[i] @ sumArraysOnGPU.
+    // More factors could be Occupancy due to warp size of 32..
+    // and this is covered in Chapter 3.
+
     // invoke kernel at host side
     int iLen = 1023;
     dim3 block (iLen);

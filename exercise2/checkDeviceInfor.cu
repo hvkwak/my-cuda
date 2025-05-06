@@ -76,6 +76,13 @@ int main(int argc, char **argv)
            deviceProp.maxThreadsPerMultiProcessor);
     printf("  Maximum number of threads per block:           %d\n",
            deviceProp.maxThreadsPerBlock);
+
+    // exercise 2-5: find the maximum size supported by the system for each
+    // grid and block dimension.
+    //
+    // Note that this is the maximum in each dimension of a thread block,
+    // and dimensions altogether cannot exceed the maximum number of thread
+    // per block, which is 1024 in the current system.
     printf("  Maximum sizes of each dimension of a block:    %d x %d x %d\n",
            deviceProp.maxThreadsDim[0],
            deviceProp.maxThreadsDim[1],

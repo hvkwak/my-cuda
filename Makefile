@@ -38,7 +38,8 @@ ifeq ($(EXERCISE),exercise2)
 CU_APPS=checkDeviceInfor checkThreadIndex sumArraysOnGPU-timer \
         sumMatrixOnGPU-1D-grid-1D-block sumMatrixOnGPU-2D-grid-2D-block \
         checkDimension defineGridBlock sumArraysOnGPU-small-case \
-        sumMatrixOnGPU-2D-grid-1D-block sumMatrixOnGPU
+        sumMatrixOnGPU-2D-grid-1D-block sumMatrixOnGPU \
+	sumMatrixOnGPU-2D-grid-2D-block-integer
 C_APPS=sumArraysOnHost
 NVCC_FLAGS = -O2
 all: ${C_APPS} ${CU_APPS}

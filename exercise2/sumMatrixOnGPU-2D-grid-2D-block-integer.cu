@@ -1,6 +1,7 @@
 #include "../common/common.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include <vector>
 
 /*
  * This example demonstrates a simple vector sum on the GPU and on the host.
@@ -128,19 +129,41 @@ int main(int argc, char **argv)
     CHECK(cudaMemcpy(d_MatA, h_A, nBytes, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_MatB, h_B, nBytes, cudaMemcpyHostToDevice));
 
-    // invoke kernel at host side
-    int dimx = 32;
-    int dimy = 32;
-    dim3 block(dimx, dimy);
-    dim3 grid((nx + block.x - 1) / block.x, (ny + block.y - 1) / block.y);
 
-    iStart = seconds();
-    sumMatrixOnGPU2D<<<grid, block>>>(d_MatA, d_MatB, d_MatC, nx, ny);
-    CHECK(cudaDeviceSynchronize());
-    iElaps = seconds() - iStart;
-    printf("sumMatrixOnGPU2D <<<(%d,%d), (%d,%d)>>> elapsed %f sec\n", grid.x,
-           grid.y,
-           block.x, block.y, iElaps);
+    // exercise 2-3:
+    // change the sumMatrixOnGPU-2D-grid-2D-block for integer addition and find the
+    // best configuration turns out to be dim3 block(32, 8).
+
+    // invoke kernel at host side
+    std::vector<int> dimx_vec = {4, 8, 16, 32, 64};
+    std::vector<int> dimy_vec = {4, 8, 16, 32, 64};
+
+    // run each combination
+    for (int dimx : dimx_vec){
+        for (int dimy : dimy_vec){
+          if (dimx * dimy > 1024) {
+            printf(
+                "Skipping configuration (%d,%d): too many threads per block\n",
+                dimx, dimy);
+            continue;
+          }
+          if (dimx * dimy < 32){
+            printf(
+                "Skipping configuration (%d,%d): not enough threads per block\n",
+                dimx, dimy);
+            continue;
+          }
+          dim3 block(dimx, dimy);
+          dim3 grid((nx + block.x - 1) / block.x, (ny + block.y - 1) / block.y);
+          iStart = seconds();
+          sumMatrixOnGPU2D<<<grid, block>>>(d_MatA, d_MatB, d_MatC, nx, ny);
+          CHECK(cudaDeviceSynchronize());
+          iElaps = seconds() - iStart;
+          printf("elapsed %f sec : sumMatrixOnGPU2D <<<(%d,%d), (%d,%d)>>>\n",
+                 iElaps, grid.x, grid.y, block.x, block.y);
+        }
+    }
+
     // check kernel error
     CHECK(cudaGetLastError());
 
