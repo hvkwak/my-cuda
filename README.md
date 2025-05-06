@@ -5,7 +5,6 @@ My CUDA programming exercises codes while reading the book "Professional CUDA C 
 Compile and execute the programming exercise of your choice at the project root, e.g. exercise1
 ```
 make EXERCISE=exercise1
-./main
 ```
 
 ## Exercise Descriptions
