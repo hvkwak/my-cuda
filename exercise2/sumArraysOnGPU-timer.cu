@@ -137,12 +137,19 @@ int main(int argc, char **argv)
     //
     // if block.x = 1023, blockDim.x = 16401
     // if block.x = 1024, blockDim.x = 16384
-    // The main difference is the blockDim.x. If there are more
-    // threads in a block, less thread blocks are needed.
-    // block.x = 1023 turns out to be quite waste of threads
-    // due to the waste of leftover 1000+ idle threads
-    // that are filtered at
-    // if (i < N) C[i] = A[i] + B[i] @ sumArraysOnGPU.
+    // The main difference is the blockDim.x.
+    //
+    // 1. If there are more threads in a block, less thread blocks are needed.
+    // less threads requires more thread blocks and this turns out to be
+    // the reason for execution time, because only a fixed number of
+    // thread blocks can run concurrently.
+    //
+    // 2. block.x = 1023 turns out to be waste of threads
+    // because the last warp in every thread block will have a disabled
+    // thread that performs no work because 1023 cannot be divided by the warp
+    // size of 32.
+    //
+    //
     // More factors could be Occupancy due to warp size of 32..
     // and this is covered in Chapter 3.
 
@@ -168,7 +175,7 @@ int main(int argc, char **argv)
     // Namely it is similar to loop unrolling, less overheads.
     iLen = 256;
     block = (iLen);
-    grid = ((nElem + block.x - 1) / block.x);
+    grid = ((nElem/2 + block.x - 1) / block.x); // grid dimension should be half, too.
 
     iStart = seconds();
     sumArraysOnGPU_cycling<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem >> 1);
