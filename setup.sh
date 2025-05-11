@@ -11,16 +11,12 @@ echo '# Set the shell prompt to a standard format for tramp in emacs' >> ~/.prof
 #echo 'PS1="\u@\h:\w\$ "' >> ~/.bashrc
 
 # Option 2
-#cat << 'EOF' >> ~/.bashrc
-#if [[ $TERM == "dumb" ]]; then
-#  PS1='$ '
-#fi
-#EOF
-
-# Option 3: keep it in .profile
 cat << 'EOF' >> ~/.profile
-[[ $TERM == "dumb" ]] && PS1='$ ' && return
+if [[ $TERM == "dumb" ]]; then
+  PS1='$ '
+fi
 EOF
+
 
 # add nvcc in .profile
 echo '' >> ~/.profile
