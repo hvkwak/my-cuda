@@ -4,7 +4,8 @@
 touch ~/.no_auto_tmux
 
 # set the shell prompt to a standard format.
-echo '# Set the shell prompt to a standard format for tramp in emacs' >> ~/.bashrc
+echo '' >> ~/.profile
+echo '# Set the shell prompt to a standard format for tramp in emacs' >> ~/.profile
 
 # Option 1 too slow?
 #echo 'PS1="\u@\h:\w\$ "' >> ~/.bashrc
@@ -22,6 +23,7 @@ cat << 'EOF' >> ~/.profile
 EOF
 
 # add nvcc in .profile
+echo '' >> ~/.profile
 echo '# add nvcc ' >> ~/.profile
 cat << 'EOF' >> ~/.profile
 export PATH=/usr/local/cuda/bin:$PATH
