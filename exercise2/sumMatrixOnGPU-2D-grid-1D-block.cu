@@ -167,6 +167,7 @@ int main(int argc, char **argv)
     // exercise 2-4: new kernel let each thread handle two elements.
     // this turns out to be 22% faster than sumMatrixOnGPUMix()
     iStart = seconds();
+    grid.x = (nx/2 + block.x -1)/block.x;
     sumMatrixOnGPUMix_twice<<<grid, block>>>(d_MatA, d_MatB, d_MatC, nx/2, ny/2);
     CHECK(cudaDeviceSynchronize());
     iElaps = seconds() - iStart;

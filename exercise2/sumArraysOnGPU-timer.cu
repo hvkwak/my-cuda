@@ -171,7 +171,7 @@ int main(int argc, char **argv)
     // sumArraysOnGPU_cycle() allows each thread handle two elements in cycling manner
     // sumArraysOnGPU_neighbor() allows each thread handle two elements consecutively.
     //
-    // Having two threads handle two elements turns out to be 30% faster.
+    // Having two threads handle two elements turns out to be at least 30% faster.
     // Namely it is similar to loop unrolling, less overheads.
     iLen = 256;
     block = (iLen);
