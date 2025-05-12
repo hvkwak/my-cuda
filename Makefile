@@ -51,4 +51,26 @@ all: ${C_APPS} ${CU_APPS}
 clean:
 	rm -f ${CU_APPS} ${C_APPS}
 endif
+
+
+## exercise3
+## sm_52 statt sm_35?
+##
+## keep it for later use:
+## more files
+## nestedHelloWorld nestedReduce nestedReduce2 nestedReduceNosync \
+		reduceInteger simpleDeviceQuery simpleDivergence sumMatrix
+## nvcc -O2 -arch=sm_52 -o $@ $< -lcudadevrt --relocatable-device-code true
+ifeq ($(EXERCISE),exercise3)
+CU_APPS=reduceInteger
+C_APPS=
+NVCC_FLAGS = -O2
+all: ${C_APPS} ${CU_APPS}
+%: $(EXERCISE)/%.cu
+	nvcc -O2 -arch=sm_52 -o $@ $< -lcudadevrt --relocatable-device-code -rdc=true
+%: $(EXERCISE)/%.c
+	gcc -O2 -std=c99 -o $@ $<
+clean:
+	rm -f ${CU_APPS} ${C_APPS}
+endif
 # end
