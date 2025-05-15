@@ -658,15 +658,15 @@ int main(int argc, char **argv)
     printf("gpu Unrolling8  elapsed %f sec gpu_sum: %d <<<grid %d block "
            "%d>>>\n", iElaps, gpu_sum, grid.x / 8, block.x);
 
-    //
-    // exercise 3-2:
+    // exercise 3-2: kernel 7, reduceUnrolling16()
     // imlement reduceUnrolling16 and compare with reduceUnrolling8()
     //
-    // kernel 7, reduceUnrolling16
+    // reduced instruction overheads and more independent instructions
+    // lead to faster execution time than that of reduceUnrolling8()
     CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
     CHECK(cudaDeviceSynchronize());
     iStart = seconds();
-    reduceUnrolling8<<<grid.x / 16, block>>>(d_idata, d_odata, size);
+    reduceUnrolling16<<<grid.x / 16, block>>>(d_idata, d_odata, size);
     CHECK(cudaDeviceSynchronize());
     iElaps = seconds() - iStart;
     CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 16 * sizeof(int),
