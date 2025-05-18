@@ -185,6 +185,45 @@ __global__ void reduceUnrolling4 (int *g_idata, int *g_odata, unsigned int n)
     if (tid == 0) g_odata[blockIdx.x] = idata[0];
 }
 
+__global__ void reduceUnrolling8ForLoop (int *g_idata, int *g_odata, unsigned int n)
+{
+
+    // set thread ID
+    unsigned int tid = threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x * 8 + threadIdx.x;
+
+    // convert global data pointer to the local pointer of this block
+    int *idata = g_idata + blockIdx.x * blockDim.x * 8;
+
+    int *ptr = g_idata + idx;
+    int tmp = 0;
+
+    // Increment tmp 8 times with values strided by blockDim.x
+    for (int i = 0; i < 8; i++) {
+        tmp += *ptr;
+        ptr += blockDim.x;
+    }
+    g_idata[idx] = tmp;
+
+    __syncthreads();
+
+    // in-place reduction in global memory
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1)
+    {
+        if (tid < stride)
+        {
+            idata[tid] += idata[tid + stride];
+        }
+
+        // synchronize within threadblock
+        __syncthreads();
+    }
+
+    // write result for this block to global mem
+    if (tid == 0) g_odata[blockIdx.x] = idata[0];
+
+}
+
 __global__ void reduceUnrolling8 (int *g_idata, int *g_odata, unsigned int n)
 {
     // set thread ID
@@ -227,8 +266,6 @@ __global__ void reduceUnrolling8 (int *g_idata, int *g_odata, unsigned int n)
 }
 
 
-
-// exercise 3-2: write reduceUnrolling16 and compare with reduceUnrolling8
 __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n)
 {
     // set thread ID
@@ -273,6 +310,63 @@ __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n)
 
         // synchronize within threadblock
         __syncthreads();
+    }
+
+    // write result for this block to global mem
+    if (tid == 0) g_odata[blockIdx.x] = idata[0];
+}
+
+__global__ void reduceUnrollWarps8NoVMEM (int *g_idata, int *g_odata, unsigned int n)
+{
+    // set thread ID
+    unsigned int tid = threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x * 8 + threadIdx.x;
+
+    // convert global data pointer to the local pointer of this block
+    int *idata = g_idata + blockIdx.x * blockDim.x * 8;
+
+    // unrolling 8
+    if (idx + 7 * blockDim.x < n)
+    {
+        int a1 = g_idata[idx];
+        int a2 = g_idata[idx + blockDim.x];
+        int a3 = g_idata[idx + 2 * blockDim.x];
+        int a4 = g_idata[idx + 3 * blockDim.x];
+        int b1 = g_idata[idx + 4 * blockDim.x];
+        int b2 = g_idata[idx + 5 * blockDim.x];
+        int b3 = g_idata[idx + 6 * blockDim.x];
+        int b4 = g_idata[idx + 7 * blockDim.x];
+        g_idata[idx] = a1 + a2 + a3 + a4 + b1 + b2 + b3 + b4;
+    }
+
+    __syncthreads();
+
+    // in-place reduction in global memory
+    for (int stride = blockDim.x / 2; stride > 32; stride >>= 1)
+    {
+        if (tid < stride)
+        {
+            idata[tid] += idata[tid + stride];
+        }
+
+        // synchronize within threadblock
+        __syncthreads();
+    }
+
+    // unrolling warp
+    if (tid < 32)
+    {
+        idata[tid] += idata[tid + 32];
+        __syncthreads();
+        idata[tid] += idata[tid + 16];
+        __syncthreads();
+        idata[tid] += idata[tid +  8];
+        __syncthreads();
+        idata[tid] += idata[tid +  4];
+        __syncthreads();
+        idata[tid] += idata[tid +  2];
+        __syncthreads();
+        idata[tid] += idata[tid +  1];
     }
 
     // write result for this block to global mem
@@ -658,11 +752,39 @@ int main(int argc, char **argv)
     printf("gpu Unrolling8  elapsed %f sec gpu_sum: %d <<<grid %d block "
            "%d>>>\n", iElaps, gpu_sum, grid.x / 8, block.x);
 
+    // exercise 3-3: kernel6 but ForLoop
+    // implement reduceUnrolling8 with a for loop instead of unrolling,
+    // to keep data block unrolling, but uses for loop to iterate 8 statements.
+    //
+    // Although fewer threads lead to concurrently scheduled kernels with higher
+    // register usage, this turns out to be rather depending on the CUDA version
+    // where faster kernels has better bus utilization.
+    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+    CHECK(cudaDeviceSynchronize());
+    iStart = seconds();
+    reduceUnrolling8ForLoop<<<grid.x / 8, block>>>(d_idata, d_odata, size);
+    CHECK(cudaDeviceSynchronize());
+    iElaps = seconds() - iStart;
+    CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 8 * sizeof(int),
+                     cudaMemcpyDeviceToHost));
+    gpu_sum = 0;
+
+    for (int i = 0; i < grid.x / 8; i++) gpu_sum += h_odata[i];
+
+    printf("gpu UR8.ForLoop  elapsed %f sec gpu_sum: %d <<<grid %d block "
+           "%d>>>\n", iElaps, gpu_sum, grid.x / 8, block.x);
+
     // exercise 3-2: kernel 7, reduceUnrolling16()
     // imlement reduceUnrolling16 and compare with reduceUnrolling8()
     //
     // reduced instruction overheads and more independent instructions
-    // lead to faster execution time than that of reduceUnrolling8()
+    // lead to more concurrent read operations,
+    // evtl. faster execution time than that of reduceUnrolling8().
+    //
+    // e.g. at Tesla M2050 relative to reduceUnrolling8(), it turns out to be..
+    // 1. execution time about 30% faster,
+    // 2. global memory read throughput doubled,
+    // which but may vary with the hardware.
     CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
     CHECK(cudaDeviceSynchronize());
     iStart = seconds();
@@ -696,6 +818,30 @@ int main(int argc, char **argv)
     printf("gpu UnrollWarp8 elapsed %f sec gpu_sum: %d <<<grid %d block "
            "%d>>>\n", iElaps, gpu_sum, grid.x / 8, block.x);
 
+
+
+    // exercise 3-4: kernel 8, instead of declaring vmem as volatile,
+    // calling __syncthreads instead.
+    //
+    // volatile pointer is known to skip the L1 cache, but directly access
+    // global memory. Although it may utilize the device in SIMT fashion with
+    // less instructions in comparison with __syncthreads, the variant with
+    // __syncthreads produces better performance as it hit L1 cache, e.g.
+    // in Fermi devices.
+    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+    CHECK(cudaDeviceSynchronize());
+    iStart = seconds();
+    reduceUnrollWarps8NoVMEM<<<grid.x / 8, block>>>(d_idata, d_odata, size);
+    CHECK(cudaDeviceSynchronize());
+    iElaps = seconds() - iStart;
+    CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 8 * sizeof(int),
+                     cudaMemcpyDeviceToHost));
+    gpu_sum = 0;
+
+    for (int i = 0; i < grid.x / 8; i++) gpu_sum += h_odata[i];
+
+    printf("gpu UW8.NoVMEM elapsed %f sec gpu_sum: %d <<<grid %d block "
+           "%d>>>\n", iElaps, gpu_sum, grid.x / 8, block.x);
 
     // kernel 9: reduceCompleteUnrollWarsp8
     CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
