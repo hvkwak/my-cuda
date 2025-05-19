@@ -54,15 +54,11 @@ endif
 
 
 ## exercise3
-## sm_52 statt sm_35?
-##
-## keep it for later use:
-## more files
 ## nestedHelloWorld nestedReduce nestedReduce2 nestedReduceNosync \
 		reduceInteger simpleDeviceQuery simpleDivergence sumMatrix
 ## nvcc -O2 -arch=sm_52 -o $@ $< -lcudadevrt --relocatable-device-code true
 ifeq ($(EXERCISE),exercise3)
-CU_APPS=nestedReduce reduceInteger
+CU_APPS=nestedReduce reduceInteger reduceFloat
 C_APPS=
 NVCC_FLAGS = -O2
 all: ${C_APPS} ${CU_APPS}
