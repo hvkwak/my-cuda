@@ -76,12 +76,12 @@ int main(int argc, char **argv) {
     bool bResult = false;
 
     // initialization
-    int size = 1 << 24; // 24 total number of elements to reduce
-
+    // only about 7 decimal digits could be accurate for float.
+    int size = 1 << 14;
     printf("    with array size %d  ", size);
 
     // execution configuration
-    int blocksize = 512;   // initial block size
+    int blocksize = 128;   // initial block size
 
     if(argc > 1)
     {
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     // allocate host memory
     size_t bytes = size * sizeof(float);
     float *h_idata = (float*) malloc(bytes);
-    float *h_odata = (float*) malloc(grid.x * sizeof(float));
+    float *h_odata = (float*) malloc(grid.x/8* sizeof(float));
     float *tmp     = (float*) malloc(bytes);
 
     // initialize the array
@@ -114,32 +114,31 @@ int main(int argc, char **argv) {
     float *d_idata = NULL;
     float *d_odata = NULL;
     CHECK(cudaMalloc((void **) &d_idata, bytes));
-    CHECK(cudaMalloc((void **) &d_odata, grid.x * sizeof(float)));
+    CHECK(cudaMalloc((void **) &d_odata, grid.x/8 * sizeof(float)));
 
     // cpu reduction
     iStart = seconds();
-    float cpu_sum = recursiveReduce (tmp, size);
+    float cpu_sum = recursiveReduce(tmp, size);
     iElaps = seconds() - iStart;
     printf("cpu reduce      elapsed %f sec cpu_sum: %f\n", iElaps, cpu_sum);
 
     // exercise 3-5: Implement sum reduction of floats in C.
     // size of 2**24 shows numeric error, 2**22 works.
     // this should be further investigated.
-
     CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
     CHECK(cudaDeviceSynchronize());
     iStart = seconds();
     reduceForLoop<<<grid.x/8, block>>>(d_idata, d_odata, size);
     CHECK(cudaDeviceSynchronize());
     iElaps = seconds() - iStart;
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 8 * sizeof(int),
+    CHECK(cudaMemcpy(h_odata, d_odata, grid.x/8 * sizeof(float),
                      cudaMemcpyDeviceToHost));
     gpu_sum = 0.0;
 
     for (int i = 0; i < grid.x / 8; i++){
-        //printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
+        printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
         gpu_sum += h_odata[i];
-        //printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
+        printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
     }
 
     printf("gpu Unrolling8  elapsed %f sec gpu_sum: %f <<<grid %d block "
@@ -162,8 +161,6 @@ int main(int argc, char **argv) {
     bResult = diff < 0.001; // smaller than epsilon
 
     if(!bResult) printf("Test failed!\n");
-
-
 
     return EXIT_SUCCESS;
 }
