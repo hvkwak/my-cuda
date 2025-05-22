@@ -24,6 +24,93 @@ float recursiveReduce(float *data, int const size)
     return recursiveReduce(data, stride);
 }
 
+__global__ void reduceCompleteUnrollWarps8(float *g_idata, float *g_odata,
+        unsigned int n)
+{
+    // set thread ID
+    unsigned int tid = threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x * 8 + threadIdx.x;
+
+    // convert global data pointer to the local pointer of this block
+    float *idata = g_idata + blockIdx.x * blockDim.x * 8;
+
+    // unrolling 8
+    if (idx + 7 * blockDim.x < n)
+    {
+        float a1 = g_idata[idx];
+        float a2 = g_idata[idx + blockDim.x];
+        float a3 = g_idata[idx + 2 * blockDim.x];
+        float a4 = g_idata[idx + 3 * blockDim.x];
+        float b1 = g_idata[idx + 4 * blockDim.x];
+        float b2 = g_idata[idx + 5 * blockDim.x];
+        float b3 = g_idata[idx + 6 * blockDim.x];
+        float b4 = g_idata[idx + 7 * blockDim.x];
+        g_idata[idx] = a1 + a2 + a3 + a4 + b1 + b2 + b3 + b4;
+    }
+
+    __syncthreads();
+
+    // in-place reduction and complete unroll
+    if (blockDim.x >= 1024 && tid < 512) idata[tid] += idata[tid + 512];
+
+    __syncthreads();
+
+    if (blockDim.x >= 512 && tid < 256) idata[tid] += idata[tid + 256];
+
+    __syncthreads();
+
+    if (blockDim.x >= 256 && tid < 128) idata[tid] += idata[tid + 128];
+
+    __syncthreads();
+
+    if (blockDim.x >= 128 && tid < 64) idata[tid] += idata[tid + 64];
+
+    __syncthreads();
+
+    // unrolling warp
+    if (tid < 32)
+    {
+        volatile float *vsmem = idata;
+        vsmem[tid] += vsmem[tid + 32];
+        vsmem[tid] += vsmem[tid + 16];
+        vsmem[tid] += vsmem[tid +  8];
+        vsmem[tid] += vsmem[tid +  4];
+        vsmem[tid] += vsmem[tid +  2];
+        vsmem[tid] += vsmem[tid +  1];
+    }
+
+    // write result for this block to global mem
+    if (tid == 0) g_odata[blockIdx.x] = idata[0];
+}
+
+// Interleaved Pair Implementation with less divergence
+__global__ void reduceInterleaved (float *g_idata, float *g_odata, unsigned int n)
+{
+    // set thread ID
+    unsigned int tid = threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // convert global data pointer to the local pointer of this block
+    float *idata = g_idata + blockIdx.x * blockDim.x;
+
+    // boundary check
+    if(idx >= n) return;
+
+    // in-place reduction in global memory
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1)
+    {
+        if (tid < stride)
+        {
+            idata[tid] += idata[tid + stride];
+        }
+
+        __syncthreads();
+    }
+
+    // write result for this block to global mem
+    if (tid == 0) g_odata[blockIdx.x] = idata[0];
+}
+
 __global__ void reduceForLoop (float *g_idata, float *g_odata, unsigned int n)
 {
 
@@ -96,6 +183,7 @@ int main(int argc, char **argv) {
     size_t bytes = size * sizeof(float);
     float *h_idata = (float*) malloc(bytes);
     float *h_odata = (float*) malloc(grid.x/8* sizeof(float));
+    float *h_odata_ = (float*) malloc(grid.x* sizeof(float));
     float *tmp     = (float*) malloc(bytes);
 
     // initialize the array
@@ -112,9 +200,11 @@ int main(int argc, char **argv) {
 
     // allocate device memory
     float *d_idata = NULL;
-    float *d_odata = NULL;
+    float *d_odata = NULL; // used for unrolling
+    float *d_odata_ = NULL;
     CHECK(cudaMalloc((void **) &d_idata, bytes));
     CHECK(cudaMalloc((void **) &d_odata, grid.x/8 * sizeof(float)));
+    CHECK(cudaMalloc((void **) &d_odata_, grid.x * sizeof(float)));
 
     // cpu reduction
     iStart = seconds();
@@ -122,9 +212,8 @@ int main(int argc, char **argv) {
     iElaps = seconds() - iStart;
     printf("cpu reduce      elapsed %f sec cpu_sum: %f\n", iElaps, cpu_sum);
 
+
     // exercise 3-5: Implement sum reduction of floats in C.
-    // size of 2**24 shows numeric error, 2**22 works.
-    // this should be further investigated.
     CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
     CHECK(cudaDeviceSynchronize());
     iStart = seconds();
@@ -134,24 +223,70 @@ int main(int argc, char **argv) {
     CHECK(cudaMemcpy(h_odata, d_odata, grid.x/8 * sizeof(float),
                      cudaMemcpyDeviceToHost));
     gpu_sum = 0.0;
-
-    for (int i = 0; i < grid.x / 8; i++){
-        printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
+    for (int i = 0; i < grid.x/8; i++){
+        //printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
         gpu_sum += h_odata[i];
-        printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
+        //printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
     }
+    printf("gpu reduceUnrollForLoop  elapsed %f sec gpu_sum: %f <<<grid %d block "
+           "%d>>>\n", iElaps, gpu_sum, grid.x/8, block.x);
 
-    printf("gpu Unrolling8  elapsed %f sec gpu_sum: %f <<<grid %d block "
-           "%d>>>\n", iElaps, gpu_sum, grid.x / 8, block.x);
+
+
+    // exercise 3-6: implement version of floats of
+    // reduceInterleaved() and reduceCompleteUnrollWarps8().
+    // Compare their performance and choose proper
+    // metrics and/or events to explain any differences.
+
+    // reduceCompletetUnrollWarps8()
+    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+    CHECK(cudaDeviceSynchronize());
+    iStart = seconds();
+    reduceCompleteUnrollWarps8<<<grid.x/8, block>>>(d_idata, d_odata, size);
+    CHECK(cudaDeviceSynchronize());
+    iElaps = seconds() - iStart;
+    CHECK(cudaMemcpy(h_odata, d_odata, grid.x/8 * sizeof(float),
+                     cudaMemcpyDeviceToHost));
+    gpu_sum = 0.0;
+    for (int i = 0; i < grid.x/8; i++){
+        //printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
+        gpu_sum += h_odata[i];
+        //printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
+    }
+    printf("gpu reduceCompleteUnrollWarps8  elapsed %f sec gpu_sum: %f <<<grid %d block "
+           "%d>>>\n", iElaps, gpu_sum, grid.x/8, block.x);
+
+
+
+    // reduceInterleaved()
+    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+    CHECK(cudaDeviceSynchronize());
+    iStart = seconds();
+    reduceInterleaved<<<grid.x, block>>>(d_idata, d_odata_, size);
+    CHECK(cudaDeviceSynchronize());
+    iElaps = seconds() - iStart;
+    CHECK(cudaMemcpy(h_odata_, d_odata_, grid.x * sizeof(float),
+                     cudaMemcpyDeviceToHost));
+    gpu_sum = 0.0;
+    for (int i = 0; i < grid.x; i++){
+        //printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
+        gpu_sum += h_odata[i];
+        //printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
+    }
+    printf("gpu reduceInterleaved  elapsed %f sec gpu_sum: %f <<<grid %d block "
+           "%d>>>\n", iElaps, gpu_sum, grid.x, block.x);
+
 
 
     // free host memory
     free(h_idata);
     free(h_odata);
+    free(h_odata_);
 
     // free device memory
     CHECK(cudaFree(d_idata));
     CHECK(cudaFree(d_odata));
+    CHECK(cudaFree(d_odata_));
 
     // reset device
     CHECK(cudaDeviceReset());
