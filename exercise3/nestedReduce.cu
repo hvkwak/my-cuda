@@ -95,7 +95,13 @@ __global__ void gpuRecursiveReduce (int *g_idata, int *g_odata,
         // cudaDeviceSynchronize();
     }
 
+
+
     // sync at block level again
+    // exercise 3-7:
+    // parent synchronizes on the completion of the child
+    // so that the changes to global data made by a dynamically
+    // spawned child guaranteed to be visible to the parent.
     __syncthreads();
 }
 

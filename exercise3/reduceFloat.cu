@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 
     // initialization
     // only about 7 decimal digits could be accurate for float.
-    int size = 1 << 14;
+    int size = 1 << 16;
     printf("    with array size %d  ", size);
 
     // execution configuration
@@ -182,8 +182,7 @@ int main(int argc, char **argv) {
     // allocate host memory
     size_t bytes = size * sizeof(float);
     float *h_idata = (float*) malloc(bytes);
-    float *h_odata = (float*) malloc(grid.x/8* sizeof(float));
-    float *h_odata_ = (float*) malloc(grid.x* sizeof(float));
+    float *h_odata = (float*) malloc(grid.x* sizeof(float));
     float *tmp     = (float*) malloc(bytes);
 
     // initialize the array
@@ -200,11 +199,9 @@ int main(int argc, char **argv) {
 
     // allocate device memory
     float *d_idata = NULL;
-    float *d_odata = NULL; // used for unrolling
-    float *d_odata_ = NULL;
+    float *d_odata = NULL;
     CHECK(cudaMalloc((void **) &d_idata, bytes));
-    CHECK(cudaMalloc((void **) &d_odata, grid.x/8 * sizeof(float)));
-    CHECK(cudaMalloc((void **) &d_odata_, grid.x * sizeof(float)));
+    CHECK(cudaMalloc((void **) &d_odata, grid.x * sizeof(float)));
 
     // cpu reduction
     iStart = seconds();
@@ -249,51 +246,51 @@ int main(int argc, char **argv) {
                      cudaMemcpyDeviceToHost));
     gpu_sum = 0.0;
     for (int i = 0; i < grid.x/8; i++){
-        //printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
         gpu_sum += h_odata[i];
-        //printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
     }
     printf("gpu reduceCompleteUnrollWarps8  elapsed %f sec gpu_sum: %f <<<grid %d block "
            "%d>>>\n", iElaps, gpu_sum, grid.x/8, block.x);
-
 
 
     // reduceInterleaved()
     CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
     CHECK(cudaDeviceSynchronize());
     iStart = seconds();
-    reduceInterleaved<<<grid.x, block>>>(d_idata, d_odata_, size);
+    reduceInterleaved<<<grid.x, block>>>(d_idata, d_odata, size);
     CHECK(cudaDeviceSynchronize());
     iElaps = seconds() - iStart;
-    CHECK(cudaMemcpy(h_odata_, d_odata_, grid.x * sizeof(float),
+    CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(float),
                      cudaMemcpyDeviceToHost));
     gpu_sum = 0.0;
     for (int i = 0; i < grid.x; i++){
-        //printf("%d-th gpu_sum BEFORE: %f, h_odata[i]: %f\n", i, gpu_sum, h_odata[i]);
         gpu_sum += h_odata[i];
-        //printf("%d-th gpu_sum AFTER:  %f\n", i, gpu_sum);
     }
     printf("gpu reduceInterleaved  elapsed %f sec gpu_sum: %f <<<grid %d block "
            "%d>>>\n", iElaps, gpu_sum, grid.x, block.x);
 
-
+    // exercise 3-6:
+    // reduceInterleaved() and reduceCompleteUnrollWarps8() turned out to be
+    // no difference when implemented for floats as integer and float have the
+    // same number of bytes. The amount of input and output operations
+    // performed doesn't change. Note that only about 7 decimal digits could be
+    // accurate for float, e.g. array size of 2**24 could be complicated due to
+    // numeric error.
 
     // free host memory
     free(h_idata);
     free(h_odata);
-    free(h_odata_);
 
     // free device memory
     CHECK(cudaFree(d_idata));
     CHECK(cudaFree(d_odata));
-    CHECK(cudaFree(d_odata_));
 
     // reset device
     CHECK(cudaDeviceReset());
 
     // check the results
+
     float diff = (gpu_sum - cpu_sum)*(gpu_sum - cpu_sum);
-    bResult = diff < 0.001; // smaller than epsilon
+    bResult = diff < 0.0001; // smaller than epsilon
 
     if(!bResult) printf("Test failed!\n");
 

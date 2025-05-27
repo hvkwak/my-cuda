@@ -599,7 +599,7 @@ int main(int argc, char **argv)
     bool bResult = false;
 
     // initialization
-    int size = 1 << 24; // total number of elements to reduce
+    int size = 1 << 16; // total number of elements to reduce
     printf("    with array size %d  ", size);
 
     // execution configuration

@@ -18,7 +18,7 @@ EXERCISE ?= exercise1
 NVCC = nvcc
 
 ## exercise 1
-# exercise 1-4: -arch sm_20 was for Fermi architecture. If this is not specified, it sets to sm_52 default value.
+# exercise 1-4: -arch sm_20 what's for Fermi architecture. If this is not specified, it sets to sm_52 default value.
 ifeq ($(EXERCISE),exercise1)
 
 TARGET = main
@@ -58,7 +58,7 @@ endif
 		reduceInteger simpleDeviceQuery simpleDivergence sumMatrix
 ## nvcc -O2 -arch=sm_52 -o $@ $< -lcudadevrt --relocatable-device-code true
 ifeq ($(EXERCISE),exercise3)
-CU_APPS=nestedReduce reduceInteger reduceFloat
+CU_APPS=nestedReduce reduceInteger reduceFloat nestedHelloWorld
 C_APPS=
 NVCC_FLAGS = -O2
 all: ${C_APPS} ${CU_APPS}
