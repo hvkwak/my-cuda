@@ -16,8 +16,10 @@ int main(int argc, char **argv)
     CHECK(cudaSetDevice(dev));
 
     // memory size
-    unsigned int isize = 1 << 22;
+    unsigned int isize = 1 << 23; // size of 2**23 is 32MB, TODO: argv!
     unsigned int nbytes = isize * sizeof(float);
+
+    double iStart, iElaps;
 
     // get device information
     cudaDeviceProp deviceProp;
@@ -36,11 +38,16 @@ int main(int argc, char **argv)
     // initialize the host memory
     for(unsigned int i = 0; i < isize; i++) h_a[i] = 0.5f;
 
+
+    iStart = seconds();
     // transfer data from the host to the device
     CHECK(cudaMemcpy(d_a, h_a, nbytes, cudaMemcpyHostToDevice));
 
     // transfer data from the device to the host
     CHECK(cudaMemcpy(h_a, d_a, nbytes, cudaMemcpyDeviceToHost));
+    iElaps = seconds() - iStart;
+
+    printf("gpu memTransfer elapsed %f sec\n", iElaps);
 
     // free memory
     CHECK(cudaFree(d_a));

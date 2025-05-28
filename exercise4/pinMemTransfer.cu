@@ -17,8 +17,10 @@ int main(int argc, char **argv)
     CHECK(cudaSetDevice(dev));
 
     // memory size
-    unsigned int isize = 1 << 22;
+    unsigned int isize = 1 << 23; // TODO: this should be command line argument.
     unsigned int nbytes = isize * sizeof(float);
+
+    double iStart, iElaps;
 
     // get device information
     cudaDeviceProp deviceProp;
@@ -34,7 +36,7 @@ int main(int argc, char **argv)
     printf("%s starting at ", argv[0]);
     printf("device %d: %s memory size %d nbyte %5.2fMB canMap %d\n", dev,
            deviceProp.name, isize, nbytes / (1024.0f * 1024.0f),
-           deviceProp.canMapHostMemory);
+           deviceProp.canMapHostMemory); // TODO: check what this MapHostMemory
 
     // allocate pinned host memory
     float *h_a;
@@ -49,11 +51,14 @@ int main(int argc, char **argv)
 
     for (int i = 0; i < isize; i++) h_a[i] = 100.10f;
 
+    iStart = seconds();
     // transfer data from the host to the device
     CHECK(cudaMemcpy(d_a, h_a, nbytes, cudaMemcpyHostToDevice));
 
     // transfer data from the device to the host
     CHECK(cudaMemcpy(h_a, d_a, nbytes, cudaMemcpyDeviceToHost));
+    iElaps = seconds() - iStart;
+    printf("gpu pinMemTransfer elapsed %f sec\n", iElaps);
 
     // free memory
     CHECK(cudaFree(d_a));
