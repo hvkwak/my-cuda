@@ -14,20 +14,19 @@
 # Default build exercise1
 EXERCISE ?= exercise1
 
-# Compiler and flags
-NVCC = nvcc
+
 
 ## exercise 1
 # exercise 1-4: -arch sm_20 what's for Fermi architecture. If this is not specified, it sets to sm_52 default value.
 ifeq ($(EXERCISE),exercise1)
-
 TARGET = main
 NVCC_FLAGS = -O2
 SRC = $(EXERCISE)/*.cu
 
 all: $(TARGET)
+
 $(TARGET): $(SRC)
-	$(NVCC) $(NVCC_FLAGS) -o $@ $^
+	nvcc $(NVCC_FLAGS) -o $@ $^
 clean:
 	rm -f $(TARGET)
 endif
@@ -60,13 +59,28 @@ endif
 ifeq ($(EXERCISE),exercise3)
 CU_APPS=nestedReduce reduceInteger reduceFloat nestedHelloWorld
 C_APPS=
-NVCC_FLAGS = -O2
+NVCC_FLAGS = -O2 -lcudadevrt --relocatable-device-code true
 all: ${C_APPS} ${CU_APPS}
 %: $(EXERCISE)/%.cu
-	nvcc -O2 -arch=sm_75 -o $@ $< -lcudadevrt --relocatable-device-code true
+	nvcc ${NVCC_FLAGS} -arch=sm_75 -o $@ $<
 %: $(EXERCISE)/%.c
 	gcc -O2 -std=c99 -o $@ $<
 clean:
 	rm -f ${CU_APPS} ${C_APPS}
 endif
-# end
+
+
+## exercise4
+ifeq ($(EXERCISE), exercise4)
+CU_APPS=globalVariable memTransfer pinMemTransfer readSegment \
+		readSegmentUnroll simpleMathAoS simpleMathSoA sumArrayZerocpy \
+		sumMatrixGPUManaged sumMatrixGPUManual transpose writeSegment
+C_APPS=
+all: ${C_APPS} ${CU_APPS}
+%: $(EXERCISE)/%.cu
+	nvcc -O2 -arch=sm_75 -o $@ $<
+%: $(EXERCISE)/%.c
+	gcc -O2 -std=c99 -o $@ $<
+clean:
+	rm -f ${CU_APPS} ${C_APPS}
+endif
