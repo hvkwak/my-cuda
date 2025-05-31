@@ -3,14 +3,16 @@
 #include <stdio.h>
 
 /*
- * This example demonstrates the use of zero-copy memory to remove the need to
- * explicitly issue a memcpy operation between the host and device. By mapping
- * host, page-locked memory into the device's address space, the address can
- * directly reference a host array and transfer its contents over the PCIe bus.
+ * This example demonstrates the use of zero-copy memory with CUDA's unified
+ * virtual addressing (UVA). UVA automatically resolves any device or host
+ * pointer on the GPU to its correct location in host or device memory. This
+ * removes the need to use cudaMemcpy or cudaHostGetDevicePointer, as well as
+ * removing programmer burden in keeping track of duplicate pointers which point
+ * to the same physical data.
  *
- * This example compares performing a vector addition with and without zero-copy
- * memory.
+ * This example compares performing a vector addition with and without UVA.
  */
+
 
 void checkResult(float *hostRef, float *gpuRef, const int N)
 {
@@ -23,10 +25,10 @@ void checkResult(float *hostRef, float *gpuRef, const int N)
             printf("Arrays do not match!\n");
             printf("host %5.2f gpu %5.2f at current %d\n", hostRef[i],
                     gpuRef[i], i);
-            return;
+            break;
         }
     }
-    printf("Arrays do match!\n");
+
     return;
 }
 
@@ -42,29 +44,34 @@ void initialData(float *ip, int size)
     return;
 }
 
-void sumArraysOnHost(float *A, float *B, float *C, const int N, int offset)
+void sumArraysOnHost(float *A, float *B, float *C, const int N)
 {
-    // exercise 4-5: Modify access at an offset.
-    for (int idx = offset, k = 0; idx < N; idx++, k++)
+    for (int idx = 0; idx < N; idx++)
     {
-        C[k] = A[idx] + B[idx]; // k: 0 ~ (N-offset)
+        C[idx] = A[idx] + B[idx];
     }
 }
 
-__global__ void sumArrays(float *A, float *B, float *C, const int N, int offset)
+__global__ void sumArrays(float *A, float *B, float *C, const int N)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int k = i + offset;
 
-    if (k < N) C[i] = A[k] + B[k];
+    if (i < N) C[i] = A[i] + B[i];
 }
 
-__global__ void sumArraysZeroCopy(float *A, float *B, float *C, const int N, int offset)
+__global__ void sumArraysZeroCopy(float *A, float *B, float *C, const int N)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int k = i + offset;
 
-    if (k < N) C[i] = A[k] + B[k];
+    if (i < N) C[i] = A[i] + B[i];
+}
+
+__global__ void sumArraysZeroCopyWithUVA(float *A, float *B, float *C,
+        const int N)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < N) C[i] = A[i] + B[i];
 }
 
 int main(int argc, char **argv)
@@ -88,11 +95,9 @@ int main(int argc, char **argv)
     printf("Using Device %d: %s ", dev, deviceProp.name);
 
     // set up data size of vectors
-    int ipower = 10;
-    int offset = 10; // offset default 10
+    int ipower = 24;
 
     if (argc > 1) ipower = atoi(argv[1]);
-    if (argc > 2) offset = atoi(argv[2]);
 
     int nElem = 1 << ipower;
     size_t nBytes = nElem * sizeof(float);
@@ -123,7 +128,7 @@ int main(int argc, char **argv)
     memset(gpuRef,  0, nBytes);
 
     // add vector at host side for result checks
-    sumArraysOnHost(h_A, h_B, hostRef, nElem, offset);
+    sumArraysOnHost(h_A, h_B, hostRef, nElem);
 
     // malloc device global memory
     float *d_A, *d_B, *d_C;
@@ -140,7 +145,11 @@ int main(int argc, char **argv)
     dim3 block (iLen);
     dim3 grid  ((nElem + block.x - 1) / block.x);
 
-    sumArrays<<<grid, block>>>(d_A, d_B, d_C, nElem, offset);
+    double start = seconds();
+    sumArrays<<<grid, block>>>(d_A, d_B, d_C, nElem);
+    CHECK(cudaDeviceSynchronize());
+    double elapsed = seconds() - start;
+    printf("sumArrays, elapsed = %f s\n", elapsed);
 
     // copy kernel result back to host side
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
@@ -172,10 +181,29 @@ int main(int argc, char **argv)
     CHECK(cudaHostGetDevicePointer((void **)&d_B, (void *)h_B, 0));
 
     // add at host side for result checks
-    sumArraysOnHost(h_A, h_B, hostRef, nElem, offset);
+    sumArraysOnHost(h_A, h_B, hostRef, nElem);
 
     // execute kernel with zero copy memory
-    sumArraysZeroCopy<<<grid, block>>>(d_A, d_B, d_C, nElem, offset);
+    start = seconds();
+    sumArraysZeroCopy<<<grid, block>>>(d_A, d_B, d_C, nElem);
+    CHECK(cudaDeviceSynchronize());
+    elapsed = seconds() - start;
+    printf("sumArraysZeroCopy, elapsed = %f s\n", elapsed);
+
+    // copy kernel result back to host side
+    CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    // check device results
+    checkResult(hostRef, gpuRef, nElem);
+
+    memset(gpuRef,  0, nBytes);
+
+    // execute kernel with zero copy memory
+    start = seconds();
+    sumArraysZeroCopyWithUVA<<<grid, block>>>(h_A, h_B, d_C, nElem);
+    CHECK(cudaDeviceSynchronize());
+    elapsed = seconds() - start;
+    printf("sumArraysZeroCopy w/ UVA, elapsed = %f s\n", elapsed);
 
     // copy kernel result back to host side
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));

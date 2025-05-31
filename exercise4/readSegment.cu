@@ -81,6 +81,23 @@ int main(int argc, char **argv)
     int blocksize = 512;
     int offset = 0;
 
+
+    // exercise 4-7: Test several offsets
+    // multiples of 32 turn out to be more efficient. Offsets that are multiples
+    // of 32 correspond to offsets aligned to 128 bytes due to 4 bytes from the
+    // data type of float. Addresses aligned to 128 bytes show better results,
+    // but the actual speed-up was almost invisible when tested in RTX 5060.
+
+    // exercise 4-8: Disable L1 cache? With offsets 0, 11, and 128?
+    // Disabling L1 cache may slow down the performance. Offset of 11 is worse.
+    //
+    // exercise 4-9: global load throughputs and efficiency with L1 and offsets?
+    // 1. when L1 enabled, gld_throughput with the offset of 11 shows better
+    // throughput than offset of 0 or 128, which is likely due to pre-fetching
+    // for unaligned accesses.
+    // 2.
+    //
+
     if (argc > 1) offset    = atoi(argv[1]);
 
     if (argc > 2) blocksize = atoi(argv[2]);
