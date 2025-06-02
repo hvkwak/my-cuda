@@ -89,14 +89,13 @@ int main(int argc, char **argv)
     // but the actual speed-up was almost invisible when tested in RTX 5060.
 
     // exercise 4-8: Disable L1 cache? With offsets 0, 11, and 128?
-    // Disabling L1 cache may slow down the performance. Offset of 11 is worse.
+    // Offset of 11 leads to unaligned access, Disabling L1 cache may slow down
+    // the performance, this is because of not being able to re-use partially
+    // used cache lines from earlier reads.
     //
     // exercise 4-9: global load throughputs and efficiency with L1 and offsets?
-    // 1. when L1 enabled, gld_throughput with the offset of 11 shows better
-    // throughput than offset of 0 or 128, which is likely due to pre-fetching
-    // for unaligned accesses.
-    // 2.
-    //
+    // gld_throughput and gld_efficiency with L1 enabled for misaligned access with offset = 11
+    // are better than aligned accesses thanks to pre-fetching cache lines.
 
     if (argc > 1) offset    = atoi(argv[1]);
 
