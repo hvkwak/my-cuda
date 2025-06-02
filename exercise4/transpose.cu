@@ -1,7 +1,7 @@
 #include "../common/common.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
-
+#include <string>
 /*
  * Various memory access pattern optimizations applied to a matrix transpose
  * kernel.
@@ -138,10 +138,31 @@ __global__ void transposeUnroll4Row(float *out, float *in, const int nx,
 
     if (ix + 3 * blockDim.x < nx && iy < ny)
     {
-        out[to]                   = in[ti];
-        out[to + ny * blockDim.x]   = in[ti + blockDim.x];
+        out[to]                       = in[ti];
+        out[to + ny * blockDim.x]     = in[ti + blockDim.x];
         out[to + ny * 2 * blockDim.x] = in[ti + 2 * blockDim.x];
         out[to + ny * 3 * blockDim.x] = in[ti + 3 * blockDim.x];
+    }
+}
+
+// exercise 4-15
+__global__ void transposeRow(float *out, float *in, const int nx, const int ny){
+
+    // unsigned int ix = blockDim.x * blockIdx.x + threadIdx.x; // 0
+    unsigned int iy = blockDim.y * blockIdx.y + threadIdx.y;
+
+    unsigned int ti; // unrolled access in rows
+    unsigned int to;
+
+    // thread handles all elements in a row.
+    for (int ix = 0; ix < nx; ix++){
+
+        ti = iy * nx + ix;
+        to = ix * ny + iy;
+
+        if (iy < ny){
+            out[to] = in[ti];
+        }
     }
 }
 
@@ -268,7 +289,7 @@ int main(int argc, char **argv)
 
     // kernel pointer and descriptor
     void (*kernel)(float *, float *, int, int);
-    char *kernelName;
+    std::string kernelName;
 
     // set up kernel
     switch (iKernel)
@@ -302,7 +323,7 @@ int main(int argc, char **argv)
     case 5:
         kernel = &transposeUnroll4Col;
         kernelName = "Unroll4Col    ";
-        grid.x = (nx + block.x * 4 - 1) / (block.x * 4);
+        grid.y = (ny + block.y * 4 - 1) / (block.y * 4);
         break;
 
     case 6:
@@ -313,6 +334,34 @@ int main(int argc, char **argv)
     case 7:
         kernel = &transposeDiagonalCol;
         kernelName = "DiagonalCol   ";
+        break;
+
+    case 8:
+        // exercise 4-15: implement a new kernel, transposeRow
+        // to let each thread handle all elements in a row
+        //
+        // This shows performance loss due to poor strided memory
+        // access patterns. read addresses of threads in a warp
+        // should be consecutive (coalesced)
+        //
+        // If reads are strided, many unnecessary bytes are being
+        // requested and keeping the bus busy which keeps load throughput
+        // artificially inflated.
+        //
+        // Stores, on the other hand, are coalesced, which shows good
+        // efficiency. Store throughput could be still low because kernel
+        // time is spent blocked waiting on loads.
+        kernel = &transposeRow;
+        kernelName = "Row   ";
+        block.x = 1;
+        block.y = 256;
+        grid.x = (nx + block.x * nx - 1) / (block.x * nx);
+        grid.y = (ny + block.y - 1) / block.y;
+        break;
+
+    case 9:
+        // exercise 4-16
+        // TODO: implement transposeUnroll8Row
         break;
     }
 
@@ -325,7 +374,7 @@ int main(int argc, char **argv)
     // calculate effective_bandwidth
     float ibnd = 2 * nx * ny * sizeof(float) / 1e9 / iElaps;
     printf("%s elapsed %f sec <<< grid (%d,%d) block (%d,%d)>>> effective "
-           "bandwidth %f GB\n", kernelName, iElaps, grid.x, grid.y, block.x,
+           "bandwidth %f GB\n", kernelName.c_str(), iElaps, grid.x, grid.y, block.x,
            block.y, ibnd);
     CHECK(cudaGetLastError());
 
