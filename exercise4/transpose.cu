@@ -145,6 +145,29 @@ __global__ void transposeUnroll4Row(float *out, float *in, const int nx,
     }
 }
 
+// exercise 4-16
+__global__ void transposeUnroll8Row(float *out, float *in, const int nx,
+                                    const int ny)
+{
+    unsigned int ix = blockDim.x * blockIdx.x * 8 + threadIdx.x;
+    unsigned int iy = blockDim.y * blockIdx.y + threadIdx.y;
+
+    unsigned int ti = iy * nx + ix; // access in rows
+    unsigned int to = ix * ny + iy; // access in columns
+
+    if (ix + 7 * blockDim.x < nx && iy < ny)
+    {
+        out[to]                       = in[ti];
+        out[to + ny * blockDim.x]     = in[ti + blockDim.x];
+        out[to + ny * 2 * blockDim.x] = in[ti + 2 * blockDim.x];
+        out[to + ny * 3 * blockDim.x] = in[ti + 3 * blockDim.x];
+        out[to + ny * 4 * blockDim.x] = in[ti + 4 * blockDim.x];
+        out[to + ny * 5 * blockDim.x] = in[ti + 5 * blockDim.x];
+        out[to + ny * 6 * blockDim.x] = in[ti + 6 * blockDim.x];
+        out[to + ny * 7 * blockDim.x] = in[ti + 7 * blockDim.x];
+    }
+}
+
 // exercise 4-15
 __global__ void transposeRow(float *out, float *in, const int nx, const int ny){
 
@@ -338,7 +361,8 @@ int main(int argc, char **argv)
 
     case 8:
         // exercise 4-15: implement a new kernel, transposeRow
-        // to let each thread handle all elements in a row
+        // to let each thread handle all elements in a row.
+        // -> smaller size of grid and block.
         //
         // This shows performance loss due to poor strided memory
         // access patterns. read addresses of threads in a warp
@@ -352,16 +376,18 @@ int main(int argc, char **argv)
         // efficiency. Store throughput could be still low because kernel
         // time is spent blocked waiting on loads.
         kernel = &transposeRow;
-        kernelName = "Row   ";
+        kernelName = "Row           ";
         block.x = 1;
-        block.y = 256;
+        block.y = 32;
         grid.x = (nx + block.x * nx - 1) / (block.x * nx);
         grid.y = (ny + block.y - 1) / block.y;
         break;
 
     case 9:
         // exercise 4-16
-        // TODO: implement transposeUnroll8Row
+        kernel = &transposeUnroll8Row;
+        kernelName = "Unroll8Row    ";
+        grid.x = (nx + block.x * 8 - 1) / (block.x * 8);
         break;
     }
 
