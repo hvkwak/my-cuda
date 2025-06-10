@@ -58,7 +58,8 @@ Hello World from GPU thread 5!
 ### 🛠️ Implementation Details
 This is a code snippet from `hello.cu`. Note that there is a small divergence when `threadIdx.x == 4`. This, although it may result in the desired output, is not a recommended type of programming as threads in thread blocks run in SIMT fashion - möglichst ohne Divergence!
 
-```c
+
+```cuda
 __global__ void helloWorld(void){
 
     // exercise 1-6: let it print only for the 5-th thread.
