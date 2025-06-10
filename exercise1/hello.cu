@@ -6,6 +6,7 @@ __global__ void helloWorld(void){
     if (threadIdx.x == 4){
         printf("Hello World from GPU thread 5!\n");
     }
+    //printf("Hello World from GPU thread %d!\n", threadIdx.x);
 }
 
 void helloFromGPU(dim3 grid, dim3 block){

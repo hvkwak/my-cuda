@@ -11,18 +11,16 @@
 #
 # run with e.g. make EXERCISE=exercise2
 
-# Default build exercise1
+# Default build and nvcc flags
 EXERCISE ?= exercise1
-
+NVCC_FLAGS = -O2 -Wno-deprecated-gpu-targets
 
 
 ## exercise 1
 # exercise 1-4: -arch sm_20 what's for Fermi architecture. If this is not specified, it sets to sm_52 default value.
 ifeq ($(EXERCISE),exercise1)
-NVCC_FLAGS = -O2
-SRC = $(EXERCISE)/*.cu
 all: main
-$(TARGET): $(SRC)
+main: $(EXERCISE)/main.cu $(EXERCISE)/hello.cu
 	nvcc $(NVCC_FLAGS) -o $@ $^
 clean:
 	rm -f main
@@ -37,7 +35,6 @@ CU_APPS=checkDeviceInfor checkThreadIndex sumArraysOnGPU-timer \
         sumMatrixOnGPU-2D-grid-1D-block sumMatrixOnGPU \
 		sumMatrixOnGPU-2D-grid-2D-block-integer
 C_APPS=sumArraysOnHost
-NVCC_FLAGS = -O2
 all: ${C_APPS} ${CU_APPS}
 %: $(EXERCISE)/%.cu
 	nvcc ${NVCC_FLAGS} -o $@ $<
@@ -55,7 +52,7 @@ endif
 ifeq ($(EXERCISE),exercise3)
 CU_APPS=nestedReduce reduceInteger reduceFloat nestedHelloWorld
 C_APPS=
-NVCC_FLAGS = -O2 -lcudadevrt --relocatable-device-code true
+NVCC_FLAGS = -O2 -Wno-deprecated-gpu-targets -lcudadevrt --relocatable-device-code true
 all: ${C_APPS} ${CU_APPS}
 %: $(EXERCISE)/%.cu
 	nvcc ${NVCC_FLAGS} -arch=sm_75 -o $@ $<
@@ -73,14 +70,14 @@ CU_APPS=globalVariable memTransfer pinMemTransfer readSegment \
 		sumMatrixGPUManaged sumMatrixGPUManual transpose writeSegment \
 		sumArrayZerocpyUVA
 C_APPS=
-
+NVCC_FLAGS = -O2 -Wno-deprecated-gpu-targets -Xptxas -dlcm=cg
 all: ${C_APPS} ${CU_APPS}
 
 sumArrayZerocpyL1CacheDisabled: $(EXERCISE)/sumArrayZerocpy.cu
-	nvcc -O2 -arch=sm_20 -Xptxas -dlcm=cg -o $@ $<
+	nvcc $(NVCC_FLAGS) -o $@ $<
 
 %: $(EXERCISE)/%.cu
-	nvcc -O2 -arch=sm_75 -o $@ $<
+	nvcc $(NVCC_FLAGS) -o $@ $<
 
 %: $(EXERCISE)/%.c
 	gcc -O2 -std=c99 -o $@ $<
