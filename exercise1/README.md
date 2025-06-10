@@ -1,4 +1,4 @@
-# Chapter 1
+# Chapter 1 Heterogeneous Parallel Computing with CUDA
 
 ## 📌 Highlights
 - Heterogeneous computing architectures combine two different, but complementary processor types - CPU and GPU.
@@ -55,7 +55,7 @@ Hello World from GPU thread 5!
 - The built-in `threadIdx.x` (further dimension with `threadIdx.y` and `threadIdx.z`) keeps the threads within the thread block unique and accessible.
 - The desired output `Hello World from GPU thread 5!` is the output from 5-th thread the block. 
 
-### 🛠️ (Optional) Implementation Details
+### 🛠️ Implementation Details
 This is a code snippet from `hello.cu`. Note that there is a small divergence when `threadIdx.x == 4`. This, although it may result in the desired output, is not a recommended type of programming as threads in thread blocks run in SIMT fashion - möglichst ohne Divergence!
 
 ```c
