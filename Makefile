@@ -84,5 +84,20 @@ sumArrayZerocpyL1CacheDisabled: $(EXERCISE)/sumArrayZerocpy.cu
 
 clean:
 	rm -f ${CU_APPS} ${C_APPS}
+endif
 
+## exercise5
+ifeq ($(EXERCISE), exercise5)
+CU_APPS=checkSmemRectangle checkSmemSquare constantReadOnly constantStencil \
+        reduceInteger reduceIntegerShfl simpleShfl transposeRectangle
+C_APPS=
+
+all: ${C_APPS} ${CU_APPS}
+
+%: $(EXERCISE)/%.cu
+	nvcc $(NVCC_FLAGS) -o $@ $<
+%: $(EXERCISE)/%.c
+	gcc -O2 -std=c99 -o $@ $<
+clean:
+	rm -f ${CU_APPS} ${C_APPS}
 endif
