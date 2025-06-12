@@ -5,6 +5,9 @@
 - Parallel computing usually involves two distinct areas of computing technologies: computer architecture (hardware aspect) and pararllel programming (software aspect)
 - CUDA is a general-purpose parallel computing platform and programming model.
 
+![Figure 1-9. A Heterogeneous Architecture (Cheng et al.)](images/Figure1-9.png)
+A typical heterogeneous computing architecture may consist of two multicore CPU sockets and two or more many-core GPUs. GPUs operate in conjunction with a CPU-based host through a PCIe Bus. The CPU is called the *host* and the GPU is called the *device*. Note that *Host code* runs on CPUs and *device code* runs on GPUs. An application executing on a computing architecture is typically initialized by the CPU. The CPU code is responsible for managing the environment, code, and data for the device before loading expensive parallelizable tasks on the *device*.
+
 ## 🧪 Exercise 1-2
 Remove the `cudaDeviceReset()` function from `hello.cu`, then cocmpile and run it to see what would happen.
 
