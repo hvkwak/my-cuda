@@ -161,17 +161,17 @@ int main(int argc, char **argv)
           iElaps = seconds() - iStart;
           printf("elapsed %f sec : sumMatrixOnGPU2D <<<(%d,%d), (%d,%d)>>>\n",
                  iElaps, grid.x, grid.y, block.x, block.y);
+
+          // check kernel error
+          CHECK(cudaGetLastError());
+
+          // copy kernel result back to host side
+          CHECK(cudaMemcpy(gpuRef, d_MatC, nBytes, cudaMemcpyDeviceToHost));
+
+          // check device results
+          checkResult(hostRef, gpuRef, nxy);
         }
     }
-
-    // check kernel error
-    CHECK(cudaGetLastError());
-
-    // copy kernel result back to host side
-    CHECK(cudaMemcpy(gpuRef, d_MatC, nBytes, cudaMemcpyDeviceToHost));
-
-    // check device results
-    checkResult(hostRef, gpuRef, nxy);
 
     // free device global memory
     CHECK(cudaFree(d_MatA));
