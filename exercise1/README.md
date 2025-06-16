@@ -4,7 +4,7 @@
 - Heterogeneous computing architectures combine two different, but complementary processor types - CPU and GPU. A typical heterogeneous computing architecture may consist of two multicore CPU sockets and two or more many-core GPUs. GPUs operate in conjunction with a CPU-based host through a PCIe Bus. The CPU is called the <em>host</em> and the GPU is called the <em>device</em>. Note that <em>host code</em> runs on CPUs and <em>device code</em> runs on GPUs. An application executing on a computing architecture is typically initialized by the CPU. The CPU code is responsible for managing the environment, code, and data for the device before loading expensive parallelizable tasks on the <em>device</em>.<br>
   <div style="display: inline-block; vertical-align: top;">
     <img src="images/Figure1-9.png" alt="Figure 1-9. A Heterogeneous Architecture (Cheng et al.)" width="500"><br>
-    <strong>Figure 1-9. A Heterogeneous Architecture (Cheng et al.)</strong><br>
+    <strong>Figure 1-9. A heterogeneous architecture (Cheng et al.)</strong><br>
   </div>
 - Parallel computing usually involves two distinct areas of computing technologies: computer architecture (hardware aspect) and pararllel programming (software aspect)
 - CUDA is a general-purpose parallel computing platform and programming model.

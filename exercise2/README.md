@@ -2,10 +2,12 @@
 
 ## 📌 Highlights
 - Exposing a two-level thread hierarchy through the programming model is one of the CUDA's distinguishing features that lets you control a parallel environment. This two-level thread hierarchy consists of grid of thread blocks and threads in thread blocks. 
-- Grid and block dimensions and their configurations could impact on the kernel performance. Learning how to organize threads is one of the central practices of CUDA programming.
+- Grid and block dimensions and their configurations could impact on the kernel performance. Learning how to organize the configurations under constraints is one of the central practices of CUDA programming.
 - Grids and blocks represent a logical view of the thread layout for kernel execution. Note that naive implementations won't improve the performance.Different perspective, the hardware view, is covered in Chapter 3.
-
-`TODO`: (two-level thread-hierarchy image goes here.)
+  <div style="display: inline-block; vertical-align: top;">
+    <img src="images/Figure2-5.png" alt="Figure 2-5. A two-level thread hierarchy (Cheng et al.)" width="500"><br>
+    <strong>Figure 2-5. A two-level thread hierarchy (Cheng et al.)</strong><br>
+  </div>
 
 ## 🧪 Exercise 2-1
 Using the program `sumArraysOnGPU-timer.cu`, set the `block.x = 1023`. Recompile and run it. Compare the result with the execution configuration of `block.x = 1024`. Try to explain the difference and the reason.
@@ -17,10 +19,12 @@ Using the program `sumArraysOnGPU-timer.cu`, set the `block.x = 1023`. Recompile
 ### 🛠️ Implementation Details
 Changing the block size in `main()` to `1023` or `1024`. The grid size is adjusted accordingly.
 ``` cuda
-// invoke kernel at host side
+// (.. snipped ..)
 int iLen = 1023;
 dim3 block (iLen);
 dim3 grid  ((nElem + block.x - 1) / block.x); // truncated
+
+// (.. snipped ..)
 ```
 
 ## 🧪 Exercise 2-2
@@ -34,17 +38,7 @@ Refer to `sumArraysOnGPU-timer.cu`, and let `block.x = 256.` Make a new kernel t
 ### 🛠️ Implementation Details
 Key implementation snippets are described below. To half the number of elements to set the `offset` and the grid dimension will do it. 
 ``` cuda
-int nElem = 1 << 24; // 2^(24)
-
-// (code continued)
-sumArraysOnGPU_neighbor<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem >> 1);
-sumArraysOnGPU_cycling<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem >> 1);
-
-
-// (..)
-grid = ((nElem/2 + block.x - 1) / block.x); // to half the grid dimension.
-
-// (..)
+// (...snipped...)
 __global__ void sumArraysOnGPU_cycling(float *A, float *B, float *C, const int N, const int offset){
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < offset) {
@@ -60,7 +54,18 @@ __global__ void sumArraysOnGPU_neighbor(float *A, float *B, float *C, const int 
         C[2*i+1] = A[2*i+1] + B[2*i+1];
     }
 }
-// (code continues..)
+
+// (...snipped..)
+int nElem = 1 << 24; // 2^(24)
+
+// (...snipped..)
+grid = ((nElem/2 + block.x - 1) / block.x); // to half the grid dimension.
+
+// (...snipped...)
+sumArraysOnGPU_neighbor<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem >> 1);
+sumArraysOnGPU_cycling<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem >> 1);
+
+// (...snipped..)
 ```
 
 ### ✅ Execution Results
@@ -82,18 +87,18 @@ Refer to `sumMatrixOnGPU-2D-grid-2D-block.cu`. Adapt it to integer matrix additi
 
 ### 🔑 Key Ideas
 - Several configurations were tested using different values for the 2D dimensions `x` and `y`. A `std::vector` was used to store the set of values `{4, 8, 16, 32, 64}` for each dimension, allowing for a systematic evaluation of various combinations.
-- The number of threads per block should be properly tested. The test is skipped, if..
+- The number of threads per block should be properly tested. The test is skipped, if..<br>
     there are more than 1024 threads per thread block, or
     there are less than 32 threads per thread block.
 
 ### 🛠️ Implementation Details
 The idea suggested above is fairly self-explanatory. Minimal implementation details are provided below:
 ``` cuda
-// (code continued)
+// (... snipped ...)
 std::vector<int> dimx_vec = {4, 8, 16, 32, 64};
 std::vector<int> dimy_vec = {4, 8, 16, 32, 64};
 
-// (...)
+// (... snipped ...)
 if (dimx * dimy > 1024) {
     printf("Skipping configuration (%d,%d): too many threads per block\n", dimx, dimy);
     continue;
@@ -102,7 +107,7 @@ if (dimx * dimy < 32){
     printf("Skipping configuration (%d,%d): not enough threads per block\n", dimx, dimy);
     continue;
 }
-// (code continues)
+// (... snipped ...)
 ```
 
 ### ✅ Execution Results
@@ -150,6 +155,7 @@ Refer to `sumMatrixOnGPU-2D-grid-1D-block.cu`. Make a new kernel to let each thr
 
 ### 🛠️ Implementation Details
 ``` cuda
+// (... snipped ...)
 // implementation of the kernel
 __global__ void sumMatrixOnGPUMix_twice(float *MatA, float *MatB, float *MatC, int nx, int ny)
 {
@@ -163,14 +169,14 @@ __global__ void sumMatrixOnGPUMix_twice(float *MatA, float *MatB, float *MatC, i
     }
 }
 
-// (code continued..)
+// (... snipped ...)
 dim3 block(dimx, 1);
 
-// (code continued..)
+// (... snipped ...)
 grid.x = (nx/2 + block.x -1)/block.x;
 sumMatrixOnGPUMix_twice<<<grid, block>>>(d_MatA, d_MatB, d_MatC, nx/2, ny/2);
 
-// (code continues..)
+// (... snipped ...)
 ```
 
 ### ✅ Execution Results
@@ -185,8 +191,6 @@ sumMatrixOnHost elapsed 4.372714 sec
 sumMatrixOnGPU2D: (512,16384), (32,1)  >>> elapsed 0.009547 sec. Arrays match. 
 sumMatrixOnGPU2D_twice: (256,16384), (32,1) >>> elapsed 0.005770 sec. Arrays match. 
 ```
-
-
 
 ## 🧪 Exercise 2-5
 Using `checkDeviceInfor.cu`, find the maximum size supported by your system for each grid and block dimension.
@@ -220,8 +224,6 @@ Device 0: "NVIDIA GeForce RTX 3070"
 
 
 <!-------------------------------
-
-
 ## 🧪 Exercise 1-2
 
 ### 🔑 Key Ideas
@@ -234,6 +236,4 @@ Device 0: "NVIDIA GeForce RTX 3070"
 ### ✅ Execution Results
 ```bash
 ```
-
-
 --------------------------------->
