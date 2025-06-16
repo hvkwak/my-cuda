@@ -7,7 +7,7 @@
 - GPU devices have different compute capabilities. The key of CUDA programming is to optimize the kernel performance under hardware constraints, as introduced in Chapter 2. 
 - Optimization of CUDA Execution may involve hiding <em>latency</em> by achieving high <em>occupancy</em> of warps or exposing better parallelism, avoiding <em>branch divergence</em>, <em>unrolling loops</em>, or <em>dynamic paralellism</em> for <em>nested kernel execution</em>.
 
-## 📌 Evaluation Metrics
+## 📌 Performance Metrics
 The command-line profiling tools such as `ncu`(for `CUDA 11.0.194+` ) or `nvprof`(older versions) can help provide detailed insights into kernel performance. Some of the important performance evaluation metrics that are mentioned in this book are introduced below:
 
 | Metric               | Description                                                                                                                     |
