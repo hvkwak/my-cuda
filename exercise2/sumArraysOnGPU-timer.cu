@@ -29,7 +29,7 @@ void checkResult(float *hostRef, float *gpuRef, const int N)
         }
     }
 
-    if (match) printf("Arrays match.\n\n");
+    if (match) printf("Arrays match.\n");
 
     return;
 }
@@ -162,8 +162,18 @@ int main(int argc, char **argv)
     sumArraysOnGPU<<<grid, block>>>(d_A, d_B, d_C, nElem);
     CHECK(cudaDeviceSynchronize());
     iElaps = seconds() - iStart;
-    printf("sumArraysOnGPU <<<  %d, %d  >>>  Time elapsed %f sec\n", grid.x,
+    printf("sumArraysOnGPU <<<  %d, %d  >>>  Time elapsed %f sec. ", grid.x,
            block.x, iElaps);
+
+    // check kernel error
+    CHECK(cudaGetLastError()) ;
+
+    // copy kernel result back to host side
+    CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    // check device results and reset
+    checkResult(hostRef, gpuRef, nElem);
+    memset(gpuRef,  0, nBytes);
 
     //
     // exercise 2-2: set block.x = 256, and let each thread handle two elements
@@ -181,15 +191,25 @@ int main(int argc, char **argv)
     sumArraysOnGPU_cycling<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem >> 1);
     CHECK(cudaDeviceSynchronize());
     iElaps = seconds() - iStart;
-    printf("sumArraysOnGPU_cycling <<<  %d, %d  >>>  Time elapsed %f sec\n", grid.x,
+    printf("sumArraysOnGPU_cycling <<<  %d, %d  >>>  Time elapsed %f sec. ", grid.x,
            block.x, iElaps);
+
+    // check kernel error
+    CHECK(cudaGetLastError()) ;
+
+    // copy kernel result back to host side
+    CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    // check device results and reset
+    checkResult(hostRef, gpuRef, nElem);
+    memset(gpuRef,  0, nBytes);
 
 
     iStart = seconds();
     sumArraysOnGPU_neighbor<<<grid, block>>>(d_A, d_B, d_C, nElem, nElem >> 1);
     CHECK(cudaDeviceSynchronize());
     iElaps = seconds() - iStart;
-    printf("sumArraysOnGPU_neighbor <<<  %d, %d  >>>  Time elapsed %f sec\n", grid.x,
+    printf("sumArraysOnGPU_neighbor <<<  %d, %d  >>>  Time elapsed %f sec. ", grid.x,
            block.x, iElaps);
 
 

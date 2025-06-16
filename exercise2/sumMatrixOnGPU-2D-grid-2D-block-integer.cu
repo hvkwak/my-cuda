@@ -60,7 +60,7 @@ void checkResult(int *hostRef, int *gpuRef, const int N)
     }
 
     if (match)
-        printf("Arrays match.\n\n");
+        printf("Arrays match.\n");
     else
         printf("Arrays do not match.\n\n");
 }
@@ -159,8 +159,8 @@ int main(int argc, char **argv)
           sumMatrixOnGPU2D<<<grid, block>>>(d_MatA, d_MatB, d_MatC, nx, ny);
           CHECK(cudaDeviceSynchronize());
           iElaps = seconds() - iStart;
-          printf("elapsed %f sec : sumMatrixOnGPU2D <<<(%d,%d), (%d,%d)>>>\n",
-                 iElaps, grid.x, grid.y, block.x, block.y);
+          printf("sumMatrixOnGPU2D <<<(%d,%d), (%d,%d)>>> elapsed %f sec. ",
+                 grid.x, grid.y, block.x, block.y, iElaps);
 
           // check kernel error
           CHECK(cudaGetLastError());
