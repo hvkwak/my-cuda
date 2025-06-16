@@ -28,11 +28,32 @@ Refer to `sumArraysOnGPU-timer.cu`, and let `block.x = 256.` Make a new kernel t
 
 ### 🔑 Key Ideas
 - That each tread handles two elements can be implemented in various ways. We implement two kernels, where
-    `sumArraysOnGPU_cycle()` allows each thread handle two elements in cycling manner and
+    `sumArraysOnGPU_cycling()` allows each thread handle two elements in cycling manner and
     `sumArraysOnGPU_neighbor()` allows each thread handle two elements consecutively.
 
 ### 🛠️ Implementation Details
-`TODO`
+
+``` cuda
+// ...
+grid = ((nElem/2 + block.x - 1) / block.x); // grid dimension should be half, too.
+
+// ... 
+__global__ void sumArraysOnGPU_cycling(float *A, float *B, float *C, const int N, const int offset){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < offset) {
+      C[i] = A[i] + B[i];
+      C[i + offset] = A[i + offset] + B[i + offset];
+    }
+}
+
+__global__ void sumArraysOnGPU_neighbor(float *A, float *B, float *C, const int N, const int offset){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < offset){
+        C[2*i] = A[2*i] + B[2*i];
+        C[2*i+1] = A[2*i+1] + B[2*i+1];
+    }
+}
+```
 
 ### ✅ Execution Results
 Having two threads handle two elements that is similar to `Loops Unrolling` turns out to be at least 30% faster than `sumArraysOnGPU();`
@@ -53,10 +74,12 @@ Refer to `sumMatrixOnGPU-2D-grid-2D-block.cu`. Adapt it to integer matrix additi
 Idea suggested above is pretty self-explanatory. Minimal implementation details can be suggested as below:
 
 ``` cuda
+// ... 
 // 1. invoke kernel at host side
 std::vector<int> dimx_vec = {4, 8, 16, 32, 64};
 std::vector<int> dimy_vec = {4, 8, 16, 32, 64};
 
+// ...
 // 2. skip the configuration
 if (dimx * dimy > 1024) {
     printf("Skipping configuration (%d,%d): too many threads per block\n", dimx, dimy);
@@ -66,6 +89,7 @@ if (dimx * dimy < 32){
     printf("Skipping configuration (%d,%d): not enough threads per block\n", dimx, dimy);
     continue;
 }
+// ...
 ```
 
 ### ✅ Execution Results
