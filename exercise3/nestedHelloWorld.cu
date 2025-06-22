@@ -79,6 +79,8 @@ int main(int argc, char **argv)
     // Figure 3-30 illustrates the case where the first thread of the first block
     // generates the nested call with half block size.
     //
+    // TODO: Implement HelloworldFirstThreadFirstBlock()
+    //
     // exercise 3-9
     // implement a new kernel that can limit nesting levels to a given depth.
     // add one more parameter this will be condition to stop recursive execution.

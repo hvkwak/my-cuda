@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
     bool bResult = false;
 
     // initialization
-    // only about 7 decimal digits could be accurate for float.
+    // A float typically provides up to 7 decimal digits of precision.
     int size = 1 << 16;
     printf("    with array size %d  ", size);
 
@@ -272,9 +272,9 @@ int main(int argc, char **argv) {
     // reduceInterleaved() and reduceCompleteUnrollWarps8() turned out to be
     // no difference when implemented for floats as integer and float have the
     // same number of bytes. The amount of input and output operations
-    // performed doesn't change. Note that only about 7 decimal digits could be
-    // accurate for float, e.g. array size of 2**24 could be complicated due to
-    // numeric error.
+    // performed doesn't change. Note that float typically provides up to 7
+    // decimal digits of precision. e.g. array size of 2**24 could be complicated
+    // due to numeric error.
 
     // free host memory
     free(h_idata);
