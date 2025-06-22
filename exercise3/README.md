@@ -52,7 +52,7 @@ Refer to the kernel `reduceUnrolling8()` and implement the kernel `reduceUnrolli
 ### 🛠️ Implementation Details
 <details>
 <summary>Click here to expand the details.</summary>
-``` cuda
+```cuda
 __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n){
     
     // unrolling 16
@@ -86,8 +86,8 @@ __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n){
 
 // (... snipped ...)
 reduceUnrolling16<<<grid.x / 16, block>>>(d_idata, d_odata, size);
-
-</details>```
+```
+</details>
 
 
 ### ✅ Execution Results
