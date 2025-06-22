@@ -50,6 +50,11 @@ Refer to the kernel `reduceUnrolling8()` and implement the kernel `reduceUnrolli
 - The number of thread blocks is reduced by a factor of 16 accordingly.
 
 ### 🛠️ Implementation Details
+<details>
+
+<summary>Click here</summary>
+
+
 ```cuda
 __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n){
     
@@ -85,6 +90,7 @@ __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n){
 // (... snipped ...)
 reduceUnrolling16<<<grid.x / 16, block>>>(d_idata, d_odata, size);
 ```
+</details>
 
 ### ✅ Execution Results
 `TODO`
@@ -131,6 +137,11 @@ Refer to the kernel `reduceCompleteUnrollWarps8`. Instead of declaring vmem as `
 - If the `volatile` qualifier is omitted, this code will not work correctly because the compiler or cache may optimize out some reads or writes to global or shared memory.
 
 ### 🛠️ Implementation Details
+<details>
+
+<summary>Click here</summary>
+
+
 ```cuda
 __global__ void reduceUnrollWarps8NoVMEM (int *g_idata, int *g_odata, unsigned int n)
 {
@@ -189,6 +200,7 @@ __global__ void reduceUnrollWarps8NoVMEM (int *g_idata, int *g_odata, unsigned i
     if (tid == 0) g_odata[blockIdx.x] = idata[0];
 }
 ```
+</details>
 
 ### ✅ Execution Results
 Although `volatile` qualifier may utilize the device in SIMT fashion with less instructions in comparison with `__syncthreads`, the variant with `__syncthreads` produces better performance as it hit L1 cache.
@@ -204,6 +216,11 @@ When are the changes to global data made by a dynamically spawned child guarante
 - Changes to global data made by a dynamically spawned child are guaranteed to be visible to its parent when `__syncthreads` in the parent's block takes place.
 
 ### 🛠️ Implementation Details
+<details>
+
+<summary>Click here</summary>
+
+
 ``` cuda
 __global__ void gpuRecursiveReduce (int *g_idata, int *g_odata, unsigned int isize)
 {
@@ -238,7 +255,7 @@ __global__ void gpuRecursiveReduce (int *g_idata, int *g_odata, unsigned int isi
     {
         gpuRecursiveReduce<<<1, istride>>>(idata, odata, istride);
 
-        // Note that this is deprecated!
+        // This is deprecated!
         // sync all child grids launched in this block
         // cudaDeviceSynchronize();
     }
@@ -251,6 +268,7 @@ __global__ void gpuRecursiveReduce (int *g_idata, int *g_odata, unsigned int isi
     __syncthreads();
 }
 ```
+</details>
 
 ### ✅ Execution Results
 ```bash
