@@ -29,7 +29,8 @@ Notes
 - (gld_throughput) Because the minimum memory transaction size is larger than most word sizes, the actual memory throughput required for a kernel can include the transfer of data not used by the kernel. For global memory accesses, this actual throughput is reported by the Global Load Throughput and Global Store Throughput values. (Source: [CUDA C++ Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#throughput-reported-by-visual-profiler))
 - (gst_efficiency) The metric gst_efficiency is the same as gld_efficiency, but for global memory stores.
 - (dram_read_throughput) The metric dram_write_throughput is the same as dram_read_throughput, but for device memory write throughput.
-where it is to note that the term <em>throughput</em>, however, is the amount of operations that can be processed per unit of time, commonly expressed as gflops (which stands for billion floating-point operations per second) (or bytes/sec could be the case when it comes to `load` operations), especially in fields of scientific computation that make heavy use of floating-point calculations. 
+
+The term <em>throughput</em>, however, is the amount of operations that can be processed per unit of time, commonly expressed as gflops (which stands for billion floating-point operations per second) (or bytes/sec could be the case when it comes to `load` operations), especially in fields of scientific computation that make heavy use of floating-point calculations. 
 
 
 ## 🧪 Exercise 3-1
