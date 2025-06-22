@@ -7,7 +7,7 @@ touch ~/.no_auto_tmux
 echo '' >> ~/.profile
 echo '# Set the shell prompt to a standard format for tramp in emacs' >> ~/.profile
 
-# Option 1 too slow?
+# Option 1 could be too slow? use Option 2
 #echo 'PS1="\u@\h:\w\$ "' >> ~/.bashrc
 
 # Option 2
@@ -16,7 +16,6 @@ if [[ $TERM == "dumb" ]]; then
   PS1='$ '
 fi
 EOF
-
 
 # add nvcc in .profile
 echo '' >> ~/.profile
