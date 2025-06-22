@@ -33,3 +33,10 @@ git config --global user.name "Hyovin Kwak"
 # install clangd to enable lsp-mode
 sudo apt install clangd-14
 sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 100
+
+# install cuda tool kit if not installed.
+if ! command -v nvcc >/dev/null 2>&1 && [ ! -d "/usr/local/cuda" ]; then
+    apt-get update && apt-get install -y cuda-toolkit-12-6
+else
+    echo "CUDA is already installed or present in /usr/local/cuda."
+fi
