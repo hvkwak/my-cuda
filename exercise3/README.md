@@ -54,7 +54,6 @@ Refer to the kernel `reduceUnrolling8()` and implement the kernel `reduceUnrolli
 
 <summary>Click here</summary>
 
-
 ```cuda
 __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n){
     
@@ -93,9 +92,37 @@ reduceUnrolling16<<<grid.x / 16, block>>>(d_idata, d_odata, size);
 </details>
 
 ### ✅ Execution Results
-`TODO`
+Although Unrolling16 could be favorable when it comes to execution time, it shows no significant speed-up compared with Unrolling8.
 ```bash
+root@ubuntu:/workspace/cuda_programming_works# ./reduceInteger
+./reduceInteger starting reduction at device 0: NVIDIA GeForce GTX 1660 SUPER     with array size 65536  grid 128 block 512
+...
+gpu Unrolling8  elapsed 0.000031 sec gpu_sum: 8374433 <<<grid 16 block 512>>>
+...
+gpu Unrolling16  elapsed 0.000030 sec gpu_sum: 8374433 <<<grid 8 block 512>>>
+...
 ```
+
+
+### 🔍 Kernel Performance Comparison: `reduceUnrolling8` vs. `reduceUnrolling16`
+Running the script `my_ncu.sh` can be summarized as the head-to-head comparison below. `inst_per_warp` shows that each warp executes more instructions, which implies more work per thread due to unrolling. The total number of instructions is reduced due to less threads and less warps (`inst_executed`). Better `inst_per_cycle` shows instruction-level parallelism. `sm_efficiency` shows the percentage of time at least one warp was active on an SM relative to the duration of kernel execution. Low `sm_efficiency` may result from fewer active warps per SM. It can also be caused by load imbalance between thread blocks or by very short kernel runtimes, where fixed startup/shutdown overheads dominate. `gld_efficiency` improved slightly, even though throughput declined. This means memory accesses were more coalesced, but the kernel may have issued fewer total load operations.
+
+| **Metric**                 | **reduceUnrolling8**      | **reduceUnrolling16**     |
+|---------------------------|---------------------------|----------------------------|
+| inst_per_warp             | 140.12 inst/warp          | 168.12 inst/warp           |
+| inst_executed             | 35,872 inst               | 21,520 inst                |
+| inst_per_cycle            | 0.13 inst/cycle           | 0.15 inst/cycle            |
+| achieved occupancy        | 49.08 %                   | 49.10 %                    |
+| sm_efficiency             | 52.80 %                   | 26.75 %                    |
+| gld_throughput            | 83.90 Gbyte/s             | 74.65 Gbyte/s              |
+| gld_efficiency            | 99.21 %                   | 99.56 %                    |
+| gst_throughput            | 17.04 Gbyte/s             | 8.45 Gbyte/s               |
+| gst_efficiency            | 97.71 %                   | 97.71 %                    |
+| dram_read_throughput      | 67.55 Gbyte/s             | 67.12 Gbyte/s              |
+| branch_efficiency         | 98.44 %                   | 98.44 %                    |
+
+
+
 
 ## 🧪 Exercise 3-3
 Refer to the kernel reduceUnrolling8 and replace the following code segment:
@@ -118,7 +145,8 @@ int *ptr = g_idata + idx;
 int tmp = 0;
 // Increment tmp 8 times with values strided by blockDim.x
 for (int i = 0; i < 8; i++) {
-    tmp += *ptr; ptr += blockDim.x;
+    tmp += *ptr; 
+    ptr += blockDim.x;
 }
 g_idata[idx] = tmp;
 ```
