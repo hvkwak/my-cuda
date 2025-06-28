@@ -7,7 +7,7 @@ touch ~/.no_auto_tmux
 echo '' >> ~/.profile
 echo '# Set the shell prompt to a standard format for tramp in emacs' >> ~/.profile
 
-# Option 1 too slow?
+# Option 1 could be too slow? use Option 2
 #echo 'PS1="\u@\h:\w\$ "' >> ~/.bashrc
 
 # Option 2
@@ -16,7 +16,6 @@ if [[ $TERM == "dumb" ]]; then
   PS1='$ '
 fi
 EOF
-
 
 # add nvcc in .profile
 echo '' >> ~/.profile
@@ -33,3 +32,10 @@ git config --global user.name "Hyovin Kwak"
 # install clangd to enable lsp-mode
 sudo apt install clangd-14
 sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 100
+
+# install cuda tool kit if not installed.
+if ! command -v nvcc >/dev/null 2>&1 && [ ! -d "/usr/local/cuda" ]; then
+    apt-get update && apt-get install -y cuda-toolkit-12-6
+else
+    echo "CUDA is already installed or present in /usr/local/cuda."
+fi

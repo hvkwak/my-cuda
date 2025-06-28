@@ -29,7 +29,8 @@ Notes
 - (gld_throughput) Because the minimum memory transaction size is larger than most word sizes, the actual memory throughput required for a kernel can include the transfer of data not used by the kernel. For global memory accesses, this actual throughput is reported by the Global Load Throughput and Global Store Throughput values. (Source: [CUDA C++ Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#throughput-reported-by-visual-profiler))
 - (gst_efficiency) The metric gst_efficiency is the same as gld_efficiency, but for global memory stores.
 - (dram_read_throughput) The metric dram_write_throughput is the same as dram_read_throughput, but for device memory write throughput.
-where it is to note that the term <em>throughput</em>, however, is the amount of operations that can be processed per unit of time, commonly expressed as gflops (which stands for billion floating-point operations per second) (or bytes/sec could be the case when it comes to `load` operations), especially in fields of scientific computation that make heavy use of floating-point calculations. 
+
+The term <em>throughput</em>, however, is the amount of operations that can be processed per unit of time, commonly expressed as gflops (which stands for billion floating-point operations per second, or bytes/sec could be the case when it comes to `load` operations), especially in fields of scientific computation that make heavy use of floating-point calculations. 
 
 
 ## 🧪 Exercise 3-1
@@ -50,8 +51,11 @@ Refer to the kernel `reduceUnrolling8()` and implement the kernel `reduceUnrolli
 
 ### 🛠️ Implementation Details
 <details>
-<summary>Click here to expand the details.</summary>
-``` cuda
+
+<summary>Click here</summary>
+
+
+```cuda
 __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n){
     
     // unrolling 16
@@ -85,9 +89,8 @@ __global__ void reduceUnrolling16 (int *g_idata, int *g_odata, unsigned int n){
 
 // (... snipped ...)
 reduceUnrolling16<<<grid.x / 16, block>>>(d_idata, d_odata, size);
-
-</details>```
-
+```
+</details>
 
 ### ✅ Execution Results
 `TODO`
@@ -135,8 +138,11 @@ Refer to the kernel `reduceCompleteUnrollWarps8`. Instead of declaring vmem as `
 
 ### 🛠️ Implementation Details
 <details>
-<summary>Click here to expand the details.</summary>
-``` cuda
+
+<summary>Click here</summary>
+
+
+```cuda
 __global__ void reduceUnrollWarps8NoVMEM (int *g_idata, int *g_odata, unsigned int n)
 {
     // set thread ID
@@ -193,7 +199,8 @@ __global__ void reduceUnrollWarps8NoVMEM (int *g_idata, int *g_odata, unsigned i
     // write result for this block to global mem
     if (tid == 0) g_odata[blockIdx.x] = idata[0];
 }
-</details>```
+```
+</details>
 
 ### ✅ Execution Results
 Although `volatile` qualifier may utilize the device in SIMT fashion with less instructions in comparison with `__syncthreads`, the variant with `__syncthreads` produces better performance as it hit L1 cache.
@@ -210,10 +217,12 @@ When are the changes to global data made by a dynamically spawned child guarante
 
 ### 🛠️ Implementation Details
 <details>
-<summary>Click here to expand the details.</summary>
+
+<summary>Click here</summary>
+
+
 ``` cuda
-__global__ void gpuRecursiveReduce (int *g_idata, int *g_odata,
-                                    unsigned int isize)
+__global__ void gpuRecursiveReduce (int *g_idata, int *g_odata, unsigned int isize)
 {
     // set thread ID
     unsigned int tid = threadIdx.x;
@@ -246,7 +255,7 @@ __global__ void gpuRecursiveReduce (int *g_idata, int *g_odata,
     {
         gpuRecursiveReduce<<<1, istride>>>(idata, odata, istride);
 
-        // Note that this is deprecated!
+        // This is deprecated!
         // sync all child grids launched in this block
         // cudaDeviceSynchronize();
     }
@@ -258,7 +267,8 @@ __global__ void gpuRecursiveReduce (int *g_idata, int *g_odata,
     // spawned child guaranteed to be visible to the parent.
     __syncthreads();
 }
-</details>```
+```
+</details>
 
 ### ✅ Execution Results
 ```bash
