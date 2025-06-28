@@ -1,4 +1,4 @@
-# Chapter 3 CUDA Execution Model
+# Chapter 3 CUDA Execution Modelw
 
 ## 📌 Highlights
 - The hardware perspective helps in understanding the nature of kernel execution. Two important features of the CUDA execution model on the GPU are:<br>

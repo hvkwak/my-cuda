@@ -67,14 +67,14 @@ int main(void)
     //    let the value be multiplied with the thread index.
     printf("exercise 4-1*******************\n");
     float valueArray[5] = {3.14f, 3.14f, 3.14f, 3.14f, 3.14f};
-    CHECK(cudaMemcpyToSymbol(devArray, &valueArray, sizeof(float)*5));
+    CHECK(cudaMemcpyToSymbol(devArray, &valueArray, sizeof(float)*5)); // To symbol "devArray"
     for(int i = 0; i < 5; i++){
         printf("Host:   copied %f to the global array \n", valueArray[i]);
     }
 
     checkGlobalArray<<<1, 5>>>();
 
-    CHECK(cudaMemcpyFromSymbol(&valueArray, devArray, sizeof(float)*5));
+    CHECK(cudaMemcpyFromSymbol(&valueArray, devArray, sizeof(float)*5)); // From symbol "devArray"
     for(int i = 0; i < 5; i++){
         printf("Host:   the value changed by the kernel to %f\n", valueArray[i]);
     }
