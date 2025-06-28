@@ -12,6 +12,8 @@
 
 
 ## 🧪 Exercise 4-1
+Refer to the ﬁle `globalVariable.cu`. Declare statically a global ﬂoat array with a size of ﬁve elements. Initialize the global array with the same value of 3.14. Modify the kernel to let each thread change the value of the array element with the same index as the thread index. Let the value be multiplied with the thread index. Invoke the kernel with ﬁve threads.
+
 
 ### 🔑 Key Ideas
 - 
@@ -26,7 +28,17 @@
 
 
 
-## 🧪 Exercise 1-2
+## 🧪 Exercise 4-2
+Refer to the file `globalVariable.cu`. Replace the following symbol copy functions:
+`cudaMemcpyToSymbol()`
+`cudaMemcpyFromSymbol()`
+
+with the data transfer function
+
+`cudaMemcpy()`
+
+You will need to acquire the address of the global variable using
+`cudaGetSymbolAddress()`
 
 ### 🔑 Key Ideas
 - 
@@ -41,7 +53,8 @@
 
 
 
-## 🧪 Exercise 1-2
+## 🧪 Exercise 4-3
+Compare performance of the pinned and pageable memory copies in `memTransfer` and `pinMemTransfer` using `nvprof` and different sizes: 2M, 4M, 8M, 16M, 32M, 64M, 128M.
 
 ### 🔑 Key Ideas
 - 
@@ -54,7 +67,8 @@
 ```bash
 ```
 
-## 🧪 Exercise 1-2
+## 🧪 Exercise 4-4
+Using the same examples, compare the performance of pinned and pageable memory allocation and deallocations using CPU timers and different sizes: 2M, 4M, 8M, 16M, 32M, 64M, 128M.
 
 ### 🔑 Key Ideas
 - 
@@ -67,7 +81,9 @@
 ```bash
 ```
 
-## 🧪 Exercise 1-2
+## 🧪 Exercise 4-5
+Modify `sumArrayZerocopy.cu` to access A, B, and C at an offset. Compare performance with and without L1 cache enabled. If your GPU does not support conﬁguring the L1 cache, reason about the expected results.
+
 
 ### 🔑 Key Ideas
 - 
