@@ -11,6 +11,89 @@
 
 
 
+## 🧪 Exercise 4-1
+
+### 🔑 Key Ideas
+- 
+
+### 🛠️ (Optional) Implementation Details
+
+### 📈 (Optioinal) Performance Metrics
+
+### ✅ Execution Results
+```bash
+```
+
+
+
+## 🧪 Exercise 1-2
+
+### 🔑 Key Ideas
+- 
+
+### 🛠️ (Optional) Implementation Details
+
+### 📈 (Optioinal) Performance Metrics
+
+### ✅ Execution Results
+```bash
+```
+
+
+
+## 🧪 Exercise 1-2
+
+### 🔑 Key Ideas
+- 
+
+### 🛠️ (Optional) Implementation Details
+
+### 📈 (Optioinal) Performance Metrics
+
+### ✅ Execution Results
+```bash
+```
+
+## 🧪 Exercise 1-2
+
+### 🔑 Key Ideas
+- 
+
+### 🛠️ (Optional) Implementation Details
+
+### 📈 (Optioinal) Performance Metrics
+
+### ✅ Execution Results
+```bash
+```
+
+## 🧪 Exercise 1-2
+
+### 🔑 Key Ideas
+- 
+
+### 🛠️ (Optional) Implementation Details
+
+### 📈 (Optioinal) Performance Metrics
+
+### ✅ Execution Results
+```bash
+```
+
+## 🧪 Exercise 1-2
+
+### 🔑 Key Ideas
+- 
+
+### 🛠️ (Optional) Implementation Details
+
+### 📈 (Optioinal) Performance Metrics
+
+### ✅ Execution Results
+```bash
+```
+
+
 
 
 <!-------------------------------

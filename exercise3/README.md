@@ -30,7 +30,7 @@ Notes
 - (gst_efficiency) The metric gst_efficiency is the same as gld_efficiency, but for global memory stores.
 - (dram_read_throughput) The metric dram_write_throughput is the same as dram_read_throughput, but for device memory write throughput.
 
-The term <em>throughput</em>, however, is the amount of operations that can be processed per unit of time, commonly expressed as gflops (which stands for billion floating-point operations per second, or bytes/sec could be the case when it comes to `load` operations), especially in fields of scientific computation that make heavy use of floating-point calculations. 
+The term <em>throughput</em> is the amount of operations that can be processed per unit of time, commonly expressed as gflops (which stands for billion floating-point operations per second, or bytes/sec could be the case when it comes to `load` operations), especially in fields of scientific computation that make heavy use of floating-point calculations. 
 
 
 ## 🧪 Exercise 3-1
