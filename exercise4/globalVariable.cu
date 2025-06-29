@@ -77,8 +77,8 @@ int main(void)
     CHECK(cudaMemcpyFromSymbol(&valueArray, devArray, sizeof(float)*5)); // From symbol "devArray"
     for(int i = 0; i < 5; i++){
         printf("Host:   the value changed by the kernel to %f\n", valueArray[i]);
+        valueArray[i] = 3.14f; // reset
     }
-
 
     // exercise 4-2: replace cudaMemcpyToSymbol() and cudaMemcpyFromSymbol()
     //               with cudaMemcpy() mittels cudaGetSymbolAddress()
@@ -87,7 +87,6 @@ int main(void)
     CHECK(cudaGetSymbolAddress((void **)&dptr, devArray));
     CHECK(cudaMemcpy(dptr, &valueArray, sizeof(float)*5, cudaMemcpyHostToDevice));
     printGlobalArray<<<1, 5>>>();
-
 
     CHECK(cudaDeviceReset());
     return EXIT_SUCCESS;

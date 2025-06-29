@@ -30,8 +30,9 @@ git config --global user.email "hyovin.kwak@tu-dortmund.de"
 git config --global user.name "Hyovin Kwak"
 
 # install clangd to enable lsp-mode
-sudo apt install clangd-14
-sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 100
+# sudo apt install clangd-14
+# sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 100
+sudo apt install clangd
 
 # install cuda tool kit if not installed.
 if ! command -v nvcc >/dev/null 2>&1 && [ ! -d "/usr/local/cuda" ]; then

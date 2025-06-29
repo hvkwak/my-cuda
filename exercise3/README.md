@@ -107,19 +107,19 @@ gpu Unrolling16  elapsed 0.000030 sec gpu_sum: 8374433 <<<grid 8 block 512>>>
 ### 🔍 Kernel Performance Comparison: `reduceUnrolling8` vs. `reduceUnrolling16`
 Running the script `my_ncu.sh` can be summarized as the head-to-head comparison below. `inst_per_warp` shows that each warp executes more instructions, which implies more work per thread due to unrolling. The total number of instructions is reduced due to less threads and less warps (`inst_executed`). Better `inst_per_cycle` shows instruction-level parallelism. `sm_efficiency` shows the percentage of time at least one warp was active on an SM relative to the duration of kernel execution. Low `sm_efficiency` may result from fewer active warps per SM. It can also be caused by load imbalance between thread blocks or by very short kernel runtimes, where fixed startup/shutdown overheads dominate. `gld_efficiency` improved slightly, even though throughput declined. This means memory accesses were more coalesced, but the kernel may have issued fewer total load operations.
 
-| **Metric**                 | **reduceUnrolling8**      | **reduceUnrolling16**     |
-|---------------------------|---------------------------|----------------------------|
-| inst_per_warp             | 140.12 inst/warp          | 168.12 inst/warp           |
-| inst_executed             | 35,872 inst               | 21,520 inst                |
-| inst_per_cycle            | 0.13 inst/cycle           | 0.15 inst/cycle            |
-| achieved occupancy        | 49.08 %                   | 49.10 %                    |
-| sm_efficiency             | 52.80 %                   | 26.75 %                    |
-| gld_throughput            | 83.90 Gbyte/s             | 74.65 Gbyte/s              |
-| gld_efficiency            | 99.21 %                   | 99.56 %                    |
-| gst_throughput            | 17.04 Gbyte/s             | 8.45 Gbyte/s               |
-| gst_efficiency            | 97.71 %                   | 97.71 %                    |
-| dram_read_throughput      | 67.55 Gbyte/s             | 67.12 Gbyte/s              |
-| branch_efficiency         | 98.44 %                   | 98.44 %                    |
+| Metric               | reduceUnrolling8 | reduceUnrolling16 |
+|----------------------|------------------|-------------------|
+| inst_per_warp        | 140.12 inst/warp | 168.12 inst/warp  |
+| inst_executed        | 35,872 inst      | 21,520 inst       |
+| inst_per_cycle       | 0.13 inst/cycle  | 0.15 inst/cycle   |
+| achieved occupancy   | 49.08 %          | 49.10 %           |
+| sm_efficiency        | 52.80 %          | 26.75 %           |
+| gld_throughput       | 83.90 Gbyte/s    | 74.65 Gbyte/s     |
+| gld_efficiency       | 99.21 %          | 99.56 %           |
+| gst_throughput       | 17.04 Gbyte/s    | 8.45 Gbyte/s      |
+| gst_efficiency       | 97.71 %          | 97.71 %           |
+| dram_read_throughput | 67.55 Gbyte/s    | 67.12 Gbyte/s     |
+| branch_efficiency    | 98.44 %          | 98.44 %           |
 
 
 
@@ -153,9 +153,22 @@ g_idata[idx] = tmp;
 Compare the performance of each and explain the difference using `nvprof` metrics.
 
 ### ✅ Execution Results
-`TODO`
-```bash
-```
+Using `my_ncu.sh` shows the following results. Interestingly, `reduceUnrolling8` executes more instructions than `reduceUnrolling8ForLoop`, even though both perform the same work. This is because in `reduceUnrolling8ForLoop` the iteration count (`8`) is a compile-time constant, allowing the compiler to optimize it and achieve better instruction-level parallelism. This becomes apparent when loop unrolling is disabled using `#pragma unroll 1`, which leads to significantly higher instruction counts — 164.19 inst/warp, 42,032 inst, and 0.11 inst/cycle.
+
+| Metric               | reduceUnrolling8 | reduceUnrolling8ForLoop |
+|----------------------|------------------|-------------------------|
+| inst_per_warp        | 140.12 inst/warp | 126.12 inst/warp*       |
+| inst_executed        | 35,872 inst      | 32,288 inst*            |
+| inst_per_cycle       | 0.15 inst/cycle  | 0.14 inst/cycle*        |
+| achieved occupancy   | 48.96 %          | 48.92 %                 |
+| sm_efficiency        | 33.03 %          | 32.47 %                 |
+| gld_throughput       | 87.46 Gbyte/s    | 88.97 Gbyte/s           |
+| gld_efficiency       | 99.21 %          | 99.21 %                 |
+| gst_throughput       | 17.76 Gbyte/s    | 18.07 Gbyte/s           |
+| gst_efficiency       | 97.71 %          | 97.71 %                 |
+| dram_read_throughput | 70.28 Gbyte/s    | 71.49 Gbyte/s           |
+| branch_efficiency    | 98.44 %          | 98.36 %                 |
+
 
 ## 🧪 Exercise 3-4
 Refer to the kernel `reduceCompleteUnrollWarps8`. Instead of declaring vmem as `volatile`, use `__syncthreads`. Note that `__syncthreads` must be called by all threads in a block. Compare the performance of the two kernels. Use nvprof to explain any differences.
@@ -231,9 +244,11 @@ __global__ void reduceUnrollWarps8NoVMEM (int *g_idata, int *g_odata, unsigned i
 </details>
 
 ### ✅ Execution Results
-Although `volatile` qualifier may utilize the device in SIMT fashion with less instructions in comparison with `__syncthreads`, the variant with `__syncthreads` produces better performance as it hit L1 cache.
+Although `volatile` qualifier may utilize the device in SIMT fashion with less instructions in comparison with `__syncthreads`, the variant with `__syncthreads` produces slightly better performance as it hit L1 cache.
 
 ```bash
+gpu UW8.NoVMEM elapsed 0.000038 sec gpu_sum: 8374433 <<<grid 16 block 512>>>
+gpu Cmptnroll8  elapsed 0.000036 sec gpu_sum: 8374433 <<<grid 16 block 512>>>
 ```
 
 
@@ -300,6 +315,10 @@ __global__ void gpuRecursiveReduce (int *g_idata, int *g_odata, unsigned int isi
 
 ### ✅ Execution Results
 ```bash
+./nestedReduce starting reduction at device 0: NVIDIA GeForce RTX 2060 SUPER array 1048576 grid 2048 block 512
+cpu reduce              elapsed 0.000859 sec cpu_sum: 1048576
+gpu Neighbored          elapsed 0.006043 sec gpu_sum: 1048576 <<<grid 2048 block 512>>>
+gpu nested              elapsed 0.004736 sec gpu_sum: 1048576 <<<grid 2048 block 512>>>
 ```
 
 
@@ -335,10 +354,6 @@ __global__ void nestedHelloWorldExercise(const int iSize, int iDepth, int iLimit
         printf("-------> nested execution depth: %d\n", iDepth);
     }
 }
-```
-
-### ✅ Execution Results
-```bash
 ```
 
 

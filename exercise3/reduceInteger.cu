@@ -199,6 +199,7 @@ __global__ void reduceUnrolling8ForLoop (int *g_idata, int *g_odata, unsigned in
     int tmp = 0;
 
     // Increment tmp 8 times with values strided by blockDim.x
+    // #pragma unroll 1 // this disables unrolling.
     for (int i = 0; i < 8; i++) {
         tmp += *ptr;
         ptr += blockDim.x;

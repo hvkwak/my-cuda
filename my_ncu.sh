@@ -3,13 +3,12 @@
 # The default output of ncu is extensive. This script let you run ncu profiler
 # with the specific metrics for a specific kernel in the cuda app.
 #
-# Usage: ./gpu_summary.sh --kernel-name your_kernel ./your_cuda_app
+# Usage: bash ./my_ncu.sh --kernel-name your_kernel ./your_cuda_app
+
+
+
 
 # Define metric keys and friendly labels in parallel arrays
-
-
-
-
 # TODO: add more metric keys introduced in
 #       https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html
 METRIC_KEYS=(

@@ -1,6 +1,7 @@
 #include "../common/common.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include <math.h>
 
 /*
  * This example demonstrates the use of CUDA managed memory to implement matrix
@@ -54,7 +55,7 @@ void checkResult(float *hostRef, float *gpuRef, const int N)
 
     for (int i = 0; i < N; i++)
     {
-        if (abs(hostRef[i] - gpuRef[i]) > epsilon)
+        if (sqrtf((hostRef[i] - gpuRef[i])*(hostRef[i] - gpuRef[i])) > epsilon)
         {
             match = 0;
             printf("host %f gpu %f\n", hostRef[i], gpuRef[i]);
