@@ -17,6 +17,15 @@ if [[ $TERM == "dumb" ]]; then
 fi
 EOF
 
+# keep vterm alive
+echo '' >> /etc/ssh/sshd_config
+echo '# keep vterm alive' >> /etc/ssh/sshd_config
+cat << 'EOF' >> /etc/ssh/sshd_config
+ClientAliveInterval 60
+ClientAliveCountMax 3
+EOF
+sudo systemctl restart sshd
+
 # add nvcc in .profile
 echo '' >> ~/.profile
 echo '# add nvcc ' >> ~/.profile
