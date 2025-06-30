@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+sudo apt-get update
+sudo apt upgrade
+
 # disable tmux
 touch ~/.no_auto_tmux
 
@@ -48,4 +51,21 @@ if ! command -v nvcc >/dev/null 2>&1 && [ ! -d "/usr/local/cuda" ]; then
     apt-get update && apt-get install -y cuda-toolkit-12-6
 else
     echo "CUDA is already installed or present in /usr/local/cuda."
+fi
+
+# Check if 'ncu' is already in PATH
+if ! command -v ncu &> /dev/null; then
+    echo "ncu not found. Installing nsight-compute..."
+
+    # Install if not already installed
+    sudo apt install -y nsight-compute-2025.2.1
+
+    # Add to PATH if not already in .bashrc
+    if ! grep -q "/opt/nvidia/nsight-compute/2025.2.1" ~/.bashrc; then
+        echo "" >> ~/.bashrc
+        echo "# Add ncu to PATH" >> ~/.bashrc
+        echo 'export PATH=/opt/nvidia/nsight-compute/2025.2.1:$PATH' >> ~/.bashrc
+    fi
+else
+    echo "ncu is already installed and available in PATH."
 fi

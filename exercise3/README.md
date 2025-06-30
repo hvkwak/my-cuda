@@ -104,7 +104,7 @@ gpu Unrolling16  elapsed 0.000030 sec gpu_sum: 8374433 <<<grid 8 block 512>>>
 ```
 
 
-### 🔍 Kernel Performance Comparison: `reduceUnrolling8` vs. `reduceUnrolling16`
+### 🔍 Head-to-Head Kernel Performance Comparison: `reduceUnrolling8` vs. `reduceUnrolling16`
 Running the script `my_ncu.sh` can be summarized as the head-to-head comparison below. `inst_per_warp` shows that each warp executes more instructions, which implies more work per thread due to unrolling. The total number of instructions is reduced due to less threads and less warps (`inst_executed`). Better `inst_per_cycle` shows instruction-level parallelism. `sm_efficiency` shows the percentage of time at least one warp was active on an SM relative to the duration of kernel execution. Low `sm_efficiency` may result from fewer active warps per SM. It can also be caused by load imbalance between thread blocks or by very short kernel runtimes, where fixed startup/shutdown overheads dominate. `gld_efficiency` improved slightly, even though throughput declined. This means memory accesses were more coalesced, but the kernel may have issued fewer total load operations.
 
 | Metric               | reduceUnrolling8 | reduceUnrolling16 |
@@ -152,8 +152,8 @@ g_idata[idx] = tmp;
 ```
 Compare the performance of each and explain the difference using `nvprof` metrics.
 
-### ✅ Execution Results
-Using `my_ncu.sh` shows the following results. Interestingly, `reduceUnrolling8` executes more instructions than `reduceUnrolling8ForLoop`, even though both perform the same work. This is because in `reduceUnrolling8ForLoop` the iteration count (`8`) is a compile-time constant, allowing the compiler to optimize it and achieve better instruction-level parallelism. This becomes apparent when loop unrolling is disabled using `#pragma unroll 1`, which leads to significantly higher instruction counts — 164.19 inst/warp, 42,032 inst, and 0.11 inst/cycle.
+### 🔍 Head-to-Head Kernel Performance Comparison: `reduceUnrolling8` vs. `reduceUnrolling8ForLoop`
+Using `my_ncu.sh` shows the following results. Interestingly, `reduceUnrolling8` executes more instructions than `reduceUnrolling8ForLoop`, even though both perform the same work.(*) This is because in `reduceUnrolling8ForLoop` the iteration count (`8`) is a compile-time constant, allowing the compiler to optimize it and achieve better instruction-level parallelism. This becomes apparent when loop unrolling is disabled using `#pragma unroll 1`, which leads to significantly higher instruction counts — 164.19 inst/warp, 42,032 inst, and 0.11 inst/cycle.
 
 | Metric               | reduceUnrolling8 | reduceUnrolling8ForLoop |
 |----------------------|------------------|-------------------------|
