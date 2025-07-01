@@ -9,12 +9,12 @@
 
 void checkResult(float *hostRef, float *gpuRef, const int N)
 {
-    double epsilon = 1.0E-8;
+    float epsilon = 1.0E-8;
     bool match = 1;
 
     for (int i = 0; i < N; i++)
     {
-        if (abs(hostRef[i] - gpuRef[i]) > epsilon)
+        if ((hostRef[i] - gpuRef[i]) > epsilon)
         {
             match = 0;
             printf("different on %dth element: host %f gpu %f\n", i, hostRef[i],

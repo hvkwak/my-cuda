@@ -28,7 +28,7 @@ int main(int argc, char **argv)
       unsigned int isize = 1 << value;
       unsigned int nbytes = isize * sizeof(float);
 
-      double Start, Elaps, Allocate, Deallocate;
+      double Elaps, Allocate, Deallocate;
 
       // get device information
       cudaDeviceProp deviceProp;

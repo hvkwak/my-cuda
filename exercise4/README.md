@@ -97,30 +97,108 @@ GPU Pinned Memory Transfer
 ## 🧪 Exercise 4-5
 Modify `sumArrayZerocopy.cu` to access A, B, and C at an offset. Compare performance with and without L1 cache enabled. If your GPU does not support conﬁguring the L1 cache, reason about the expected results.
 
-
 ### 🔑 Key Ideas
-- 
+- If the memory access patterns are aligned and consecutive, accesses are coalesced into a single transaction (of a warp).
+- Adding an offset can prevent the threads from coalesced access.
 
-### 🛠️ (Optional) Implementation Details
+### 🛠️ Implementation Details
+Adding the `offset` parameter will modify the memory access pattern.
+``` cuda
+void sumArraysOnHost(float *A, float *B, float *C, const int N, int offset)
+{
+    // exercise 4-5: Modify access at an offset.
+    for (int idx = offset, k = 0; idx < N; idx++, k++)
+    {
+        C[k] = A[idx] + B[idx]; // k: 0 ~ (N-offset)
+    }
+}
 
-### 📈 (Optioinal) Performance Metrics
+__global__ void sumArrays(float *A, float *B, float *C, const int N, int offset)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int k = i + offset;
 
-### ✅ Execution Results
-```bash
+    if (k < N) C[i] = A[k] + B[k];
+}
 ```
 
-## 🧪 Exercise 1-2
+### Kernel Performance Comparison: `offset = 0` vs `offset = 2`
+Offset causes misalignment and wasted cache lines, which is reflected in the drop in `gld_efficiency`. To compensate for the inefficiency, the global load throughput (`gld_throughput`) increases when `offset = 2`, resulting in higher memory traffic. Despite the higher throughput, the overall execution time is slightly longer compared to the aligned case (`offset = 0`). 
+
+Configuring L1 cache is not supported on the GTX 1660 (Turing architecture), and in this case, L1 cache likely has minimal impact on performance. Since each memory location is accessed only once, most cache lines are either used once or partially wasted, reducing the benefits of caching.
+
+| Metric                   | `offset = 0`    | `offset = 2`    |
+|--------------------------|-----------------|-----------------|
+| **inst_per_warp**        | 16 inst/warp    | 16 inst/warp    |
+| **inst_executed**        | 2,097,152       | 2,097,152       |
+| **inst_per_cycle**       | 0.10 inst/cycle | 0.10 inst/cycle |
+| **achieved occupancy**   | 82.64%          | 81.97%          |
+| **sm_efficiency**        | 94.14%          | 94.49%          |
+| **gld_throughput**       | 198.22 GB/s     | **244.58 GB/s** |
+| **gld_efficiency**       | **100%**        | **80.00%**      |
+| **gst_throughput**       | 99.11 GB/s      | 97.83 GB/s      |
+| **gst_efficiency**       | 100%            | 100%            |
+| **dram_read_throughput** | 198.35 GB/s     | 195.80 GB/s     |
+| **duration**             | **169.28 µs**   | **171.49 µs**   |
+
+### Note
+This can be further examined in `readSegment.cu` for exercise 4-7, 4-8, and 4-9.
+
+
+## 🧪 Exercise 4-15
+Refer to the kernel `tranposeUnroll4Row`. Implement a new kernel, `tranposeRow`, to let each thread handle all elements in a row. Compare the performance with existing kernels and use proper metrics to explain the difference.
 
 ### 🔑 Key Ideas
-- 
+- Let each thread handle all elements in a row. This leads to smaller size of grid and block.
+- Note that this shows performance loss due to poor strided memory access patterns. Read addresses of threads in a warp should be consecutive (coalesced).
+- Stores, on the other hand, are coalesced, resulting in high store efficiency. However, the measured store throughput may still appear low, since the kernel spends a significant amount of time stalled waiting for uncoalesced loads to complete. The stores execute quickly, but not often enough to raise the average throughput.
 
-### 🛠️ (Optional) Implementation Details
 
-### 📈 (Optioinal) Performance Metrics
+### 🛠️ Implementation Details
+One for-loop is added to let thread handle all elements in a row. 
+``` cuda
+__global__ void transposeRow(float *out, float *in, const int nx, const int ny){
 
-### ✅ Execution Results
-```bash
+    // unsigned int ix = blockDim.x * blockIdx.x + threadIdx.x; // 0
+    unsigned int iy = blockDim.y * blockIdx.y + threadIdx.y;
+
+    unsigned int ti; // unrolled access in rows
+    unsigned int to;
+
+    // thread handles all elements in a row.
+    for (int ix = 0; ix < nx; ix++){
+
+        ti = iy * nx + ix;
+        to = ix * ny + iy;
+
+        if (iy < ny){
+            out[to] = in[ti];
+        }
+    }
+}
 ```
+
+### 📊 Kernel Performance Comparison: `transposeNaiveRow` vs `transposeRow`
+A comparison with the original implementation, `transposeNaiveRow`, highlights the key differences clearly. In `transposeNaiveRow`, each thread handles one matrix element, while in `transposeRow`, each thread processes an entire row. This difference leads to significant variation in metrics like `inst_per_warp`, `inst_executed`, and `inst_per_cycle`.
+
+`transposeRow` launches far fewer threads, which results in poor warp scheduling, extremely low achieved occupancy and lower `sm_efficiency`. Despite this, it achieves 100% store efficiency, as its memory access pattern for writes is fully coalesced.
+
+However, `transposeRow` is over 2× slower than `transposeNaiveRow` in GTX 1660. This is primarily due to uncoalesced global load instructions, which cause frequent stalls. These stalls also explain the relatively low `gst_throughput`, despite perfect store efficiency — the stores are delayed by the earlier load instructions.
+
+| Metric                   | `transposeNaiveRow` | `transposeRow`   |
+|--------------------------|---------------------|------------------|
+| **inst_per_warp**        | 18 inst/warp        | 21,528 inst/warp |
+| **inst_executed**        | 2,359,296           | 1,377,792        |
+| **inst_per_cycle**       | 0.08 inst/cycle     | 0.03 inst/cycle  |
+| **achieved occupancy**   | 81.31%              | 9.10%            |
+| **sm_efficiency**        | 99.45%              | 70.25%           |
+| **gld_throughput**       | 74.29 GB/s          | 271.25 GB/s      |
+| **gld_efficiency**       | 100%                | 12.50%           |
+| **gst_throughput**       | 297.17 GB/s         | 33.91 GB/s       |
+| **gst_efficiency**       | 25%                 | 100%             |
+| **dram_read_throughput** | 74.46 GB/s          | 34.04 GB/s       |
+| **duration**             | 225.82 µs           | 494.82 µs        |
+
 
 
 

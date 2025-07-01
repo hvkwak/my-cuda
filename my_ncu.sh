@@ -30,7 +30,10 @@ METRIC_KEYS=(
 
   # 4. Warp & Thread Efficiency
   #smsp__thread_inst_executed_per_inst_executed.ratio
-  smsp__sass_average_branch_targets_threads_uniform.pct
+  #smsp__sass_average_branch_targets_threads_uniform.pct
+
+  # 5. Duration
+  gpu__time_duration.sum
 
 )
 
@@ -52,8 +55,11 @@ METRIC_LABELS=(
   "dram_read_throughput"
 
   # 4. Warp & Thread Efficiency
-  # "warp_execution_efficiency" # Ratio of active threads in warps
-  "branch_efficiency" # higher if there are less branches.
+  #"warp_execution_efficiency" # Ratio of active threads in warps
+  #"branch_efficiency" # higher if there are less branches. why not working properly??
+
+  # 5. Duration
+  "duration"
 )
 
 # Delimit with pipe character instead of space

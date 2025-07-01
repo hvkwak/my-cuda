@@ -32,12 +32,12 @@ void printData(float *in,  const int size)
 
 void checkResult(float *hostRef, float *gpuRef, const int size, int showme)
 {
-    double epsilon = 1.0E-8;
+    float epsilon = 1.0E-8;
     bool match = 1;
 
     for (int i = 0; i < size; i++)
     {
-        if (abs(hostRef[i] - gpuRef[i]) > epsilon)
+        if ((hostRef[i] - gpuRef[i]) > epsilon || (hostRef[i] - gpuRef[i]) < -epsilon)
         {
             match = 0;
             printf("different on %dth element: host %f gpu %f\n", i, hostRef[i],

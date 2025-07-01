@@ -14,11 +14,11 @@
 
 void checkResult(float *hostRef, float *gpuRef, const int N)
 {
-    double epsilon = 1.0E-8;
+    float epsilon = 1.0E-8;
 
     for (int i = 0; i < N; i++)
     {
-        if (abs(hostRef[i] - gpuRef[i]) > epsilon)
+        if ((hostRef[i] - gpuRef[i]) > epsilon)
         {
             printf("Arrays do not match!\n");
             printf("host %5.2f gpu %5.2f at current %d\n", hostRef[i],
