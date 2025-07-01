@@ -9,6 +9,7 @@ There are several ways to (dynamically) allocate global memory in the *host* and
 - *Unified Memory* is a new feature that simplifies memory management in the CUDA programming model.
 - Data transfer from *host* to *device* is expensive and may be a reason for a bottleneck of the overall application performance, if not managed properly. Thereotical peak bandwidth between GPU chip and the on-board GPU memory is very high. The link between CPU and GPU through the PCIe Bus is limited which varies by the architecture.
 
+`TODO`: add here the picture of pageable/pinned memory!
 
 ## 🧪 Exercise 4-2
 Refer to the file `globalVariable.cu`. Replace the following symbol copy functions:
