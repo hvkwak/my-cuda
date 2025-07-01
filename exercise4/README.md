@@ -62,11 +62,12 @@ Compare performance of the pageable and pinned memory copies in `memTransfer.cu`
 
 ### 🔑 Key Ideas
 - `memTransfer.cu` uses the pageable memory copies. This involves ...<br>
-    `malloc()` that allocates the (pageable) *host* memory,<br>
+    `malloc()` that allocates the (pageable) *host* memory and<br>
     `cudaMalloc()` that allocates the *device* memory,<br>
 - `pipnMemTransfer.cu` uses pinned memory copies. This involves ...<br>
     `cudaMallocHost()` that allocates the pinned *host* memory and<br>
     `cudaMalloc()` that allocates the *device* memory. // analog in `memTransfer.cu`<br>
+
 where `cudaMemcpy()` that transfers data between the *host* and *device* memory is used for both cases. `cudaFree()` deallocates the memory in *device*. Note that `cudaHostAlloc()` with the flag `cudaHostAllocDefault` may replace `cudaMallocHost()`.
 
 
@@ -123,7 +124,7 @@ __global__ void sumArrays(float *A, float *B, float *C, const int N, int offset)
 }
 ```
 
-### Kernel Performance Comparison: `offset = 0` vs `offset = 2`
+### 📊 Kernel Performance Comparison: `offset = 0` vs `offset = 2`
 Offset causes misalignment and wasted cache lines, which is reflected in the drop in `gld_efficiency`. To compensate for the inefficiency, the global load throughput (`gld_throughput`) increases when `offset = 2`, resulting in higher memory traffic. Despite the higher throughput, the overall execution time is slightly longer compared to the aligned case (`offset = 0`). 
 
 Configuring L1 cache is not supported on the GTX 1660 (Turing architecture), and in this case, L1 cache likely has minimal impact on performance. Since each memory location is accessed only once, most cache lines are either used once or partially wasted, reducing the benefits of caching.
