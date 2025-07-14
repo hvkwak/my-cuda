@@ -9,8 +9,8 @@
  * optimizing using memory padding.
  */
 
-#define BDIMX 32
-#define BDIMY 32
+#define BDIMX 4
+#define BDIMY 4
 #define IPAD  1
 
 void printData(char *msg, int *in,  const int size)
@@ -63,6 +63,63 @@ __global__ void setColReadCol (int *out)
     out[idx] = tile[threadIdx.x][threadIdx.y];
 }
 
+/* exercise5-2 */
+__global__ void setColReadRow(int *out)
+{
+    //static shared memory
+    __shared__ int tile[BDIMY][BDIMX];
+
+    // mapping from thread index to global memory index
+    unsigned int idx = threadIdx.y * blockDim.x + threadIdx.x;
+
+    // shared memory store operation
+    tile[threadIdx.x][threadIdx.y] = idx;
+
+    // wait for all threads to complete
+    __syncthreads();
+
+    // shared memory load operation
+    out[idx] = tile[threadIdx.y][threadIdx.x];
+}
+
+/* exercise5-3 */
+__global__ void setColReadRowDyn(int *out)
+{
+    // dynamic shared memory
+    extern __shared__ int tile[]; // 1D
+
+    // mapping from thread index to global memory index
+    unsigned int row_idx = threadIdx.y * blockDim.x + threadIdx.x;
+    unsigned int col_idx = threadIdx.x * blockDim.y + threadIdx.y;
+
+    // shared memory store operation
+    tile[col_idx] = row_idx;
+
+    // wait for all threads to complete
+    __syncthreads();
+
+    // shared memory load operation
+    out[row_idx] = tile[row_idx];
+}
+
+/* exercise5-4 */
+__global__ void setColReadRowPad(int *out){
+        // static shared memory
+    __shared__ int tile[BDIMY][BDIMX + IPAD];
+
+    // mapping from thread index to global memory offset
+    unsigned int idx = threadIdx.y * blockDim.x + threadIdx.x;
+
+    // shared memory store operation
+    tile[threadIdx.x][threadIdx.y] = idx;
+
+    // wait for all threads to complete
+    __syncthreads();
+
+    // shared memory load operation
+    out[idx] = tile[threadIdx.y][threadIdx.x];
+}
+
 __global__ void setRowReadCol(int *out)
 {
     // static shared memory
@@ -80,7 +137,6 @@ __global__ void setRowReadCol(int *out)
     // shared memory load operation
     out[idx] = tile[threadIdx.x][threadIdx.y];
 }
-
 
 __global__ void setRowReadColDyn(int *out)
 {
@@ -191,19 +247,39 @@ int main(int argc, char **argv)
     setRowReadCol<<<grid, block>>>(d_C);
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
-    if(iprintf)  printData("set row read col   ", gpuRef, nx * ny);
+    if(1)  printData("set row read col   ", gpuRef, nx * ny);
+
+    // exercise 5-2: implement setColReadRow()
+    CHECK(cudaMemset(d_C, 0, nBytes));
+    setColReadRow<<<grid, block>>>(d_C);
+    CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    if(1)  printData("set col read row   ", gpuRef, nx * ny);
 
     CHECK(cudaMemset(d_C, 0, nBytes));
     setRowReadColDyn<<<grid, block, BDIMX*BDIMY*sizeof(int)>>>(d_C);
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
-    if(iprintf)  printData("set row read col dyn", gpuRef, nx * ny);
+    if(1)  printData("set row read col dyn", gpuRef, nx * ny);
+
+    // exercise 5-3: implement setColReadRowDyn()
+    CHECK(cudaMemset(d_C, 0, nBytes));
+    setColReadRowDyn<<<grid, block, BDIMX*BDIMY*sizeof(int)>>>(d_C);
+    CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    if(1)  printData("set col read row dyn", gpuRef, nx * ny);
 
     CHECK(cudaMemset(d_C, 0, nBytes));
     setRowReadColPad<<<grid, block>>>(d_C);
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
-    if(iprintf)  printData("set row read col pad", gpuRef, nx * ny);
+    if(1)  printData("set row read col pad", gpuRef, nx * ny);
+
+    CHECK(cudaMemset(d_C, 0, nBytes));
+    setColReadRowPad<<<grid, block>>>(d_C);
+    CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    if(1)  printData("set col read row pad", gpuRef, nx * ny);
 
     CHECK(cudaMemset(d_C, 0, nBytes));
     setRowReadColDynPad<<<grid, block, (BDIMX + IPAD)*BDIMY*sizeof(int)>>>(d_C);

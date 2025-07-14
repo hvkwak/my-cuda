@@ -13,7 +13,7 @@
 
 # Default build and nvcc flags
 EXERCISE ?= exercise1
-NVCC_FLAGS = -O2 -Wno-deprecated-gpu-targets
+NVCC_FLAGS = -O2 -Wno-deprecated-gpu-targets -Wno-deprecated-declarations
 
 
 ## exercise 1
@@ -91,7 +91,7 @@ ifeq ($(EXERCISE), exercise5)
 CU_APPS=checkSmemRectangle checkSmemSquare constantReadOnly constantStencil \
         reduceInteger reduceIntegerShfl simpleShfl transposeRectangle
 C_APPS=
-
+NVCC_FLAGS = -O2 -Wno-deprecated-gpu-targets -Wno-deprecated-declarations -diag-suppress 2464
 all: ${C_APPS} ${CU_APPS}
 
 %: $(EXERCISE)/%.cu
