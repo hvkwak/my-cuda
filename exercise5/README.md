@@ -8,7 +8,7 @@
 - Constant memory is optimized for read-only data that is broadcast to many threads at a time.
   <div style="display: inline-block; vertical-align: top;">
     <img src="images/Figure5-1.png" alt="Figure 5-1. The CUDA Memory Hierarchy (Cheng et al.)" width="500"><br>
-    <strong>Figure 1-9. The CUDA Memory Hierarchy (Cheng et al.)</strong><br>
+    <strong>Figure 5-1. The CUDA Memory Hierarchy. There is shared memory per SM.  (Cheng et al.)</strong><br>
   </div>
 
 ## 🧪 Exercise 5-1
@@ -19,6 +19,7 @@ Suppose you have a shared memory tile with dimensions [32][32]. Pad a column to 
     <img src="images/Padding.png" alt="Padding an additional column to a shared memory tile with dimensions 32x32" width="500"><br>
     <strong>Padding an additional column</strong><br>
   </div>
+
 - Shared memory acesses are issued per warp of 32 threads. 
 - Data elements are divided into 32 equally-sized memory modules *banks*. Each box's index indicates the allocated memory banks.
 - The red-highlighted column represents padding — an extra column added to each row in shared memory. This avoids bank conflicts during column-major access by setting the offset each row’s starting address, ensuring that accesses fall into different banks instead of all hitting the same one.
