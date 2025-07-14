@@ -12,6 +12,6 @@ make EXERCISE=exercise1 && ./main
 * [exercise2](exercise2/): CUDA Programming Model. Different execution configuration(varying grid and block size) of `sumArraysOnGPU-timer.cu` to check the difference and reason. Several executions including execution configuration, two elements handling of each thread @ `sumMatrixOnGPU-2D-grid-2D-block.cu`, `sumMatrixOnGPU-2D-grid-1D-block.cu`. Checking maximum size supported by the system for each grid and block dimension @ `checkDeviceInfor.cu`.
 * [exercise3](exercise3/): CUDA Execution Model. Introduction to Performance Metrics. General reducing, `Loops Unrolling` and its performance improvements @ `reduceInteger.cu`, `reduceFloat.cu`. Recursive calls in CUDA @ `nestedReduce.cu`.
 * [exercise4](exercise4/): Global Memory. Memory transfers using `pageable memory`, `pinned memory`, or `zero copy` @ `memTransfer.cu`, `pinMemTransfer.cu`. Aligned and coalesced memory access patterns @ `readSegment.cu`, `sumArrayZerocpyUVA.cu`. `matrix transpose` example for memory bandwidth check @ `transpose.cu`. performance gain with L1 Cache.
-* [exercise5](exercise5/): Shared Memory. `TODO`
+* [exercise5](exercise5/): Shared Memory. Store and Load Operation using Shared Memory. `TODO`
 * [exercise6](exercise6/): Streams and Concurrency. Introduction to CUDA Stream. Stream Synchronization. `TODO`
 * [exercise8](exercise8/): GPU-Accelerated CUDA Libraries and OpenACC. `TODO`
