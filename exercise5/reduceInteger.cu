@@ -1,7 +1,8 @@
 #include "../common/common.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
-#define DIM 128
+#include <vector>
+#include <iostream>
 
 /*
  * An example of using shared memory to optimize performance of a parallel
@@ -69,6 +70,7 @@ __global__ void reduceGmem(int *g_idata, int *g_odata, unsigned int n)
     if (tid == 0) g_odata[blockIdx.x] = idata[0];
 }
 
+/* exercise 5-8: disable this, let dynamic kernels only.
 __global__ void reduceSmem(int *g_idata, int *g_odata, unsigned int n)
 {
     __shared__ int smem[DIM];
@@ -120,6 +122,7 @@ __global__ void reduceSmem(int *g_idata, int *g_odata, unsigned int n)
     // write result for this block to global mem
     if (tid == 0) g_odata[blockIdx.x] = smem[0];
 }
+*/
 
 __global__ void reduceSmemDyn(int *g_idata, int *g_odata, unsigned int n)
 {
@@ -221,6 +224,7 @@ __global__ void reduceGmemUnroll(int *g_idata, int *g_odata, unsigned int n)
     if (tid == 0) g_odata[blockIdx.x] = idata[0];
 }
 
+/* exercise 5-8: disable this, run dynamic kernels only.
 __global__ void reduceSmemUnroll(int *g_idata, int *g_odata, unsigned int n)
 {
     // static shared memory
@@ -280,6 +284,7 @@ __global__ void reduceSmemUnroll(int *g_idata, int *g_odata, unsigned int n)
     // write result for this block to global mem
     if (tid == 0) g_odata[blockIdx.x] = smem[0];
 }
+*/
 
 __global__ void reduceSmemUnrollDyn(int *g_idata, int *g_odata, unsigned int n)
 {
@@ -366,10 +371,10 @@ __global__ void reduceNeighboredGmem(int *g_idata, int *g_odata,
     if (tid == 0) g_odata[blockIdx.x] = idata[0];
 }
 
-__global__ void reduceNeighboredSmem(int *g_idata, int *g_odata,
+__global__ void reduceNeighboredSmemDyn(int *g_idata, int *g_odata,
                                      unsigned int  n)
 {
-    __shared__ int smem[DIM];
+    extern __shared__ int smem[];
 
     // set thread ID
     unsigned int tid = threadIdx.x;
@@ -414,152 +419,163 @@ int main(int argc, char **argv)
 
     // initialization
     int size = 1 << 24; // total number of elements to reduce
-    printf("    with array size %d  ", size);
+    printf("    with array size %d\n", size);
 
     // execution configuration
-    int blocksize = DIM;   // initial block size
+    // int blocksize = DIM;   // initial block size
+    std::vector<int> values = {64, 128, 512, 1024};
+    for (int blocksize : values) {
+      dim3 block(blocksize, 1);
+      dim3 grid((size + block.x - 1) / block.x, 1);
+      printf("grid %d block %d\n", grid.x, block.x);
 
-    dim3 block (blocksize, 1);
-    dim3 grid  ((size + block.x - 1) / block.x, 1);
-    printf("grid %d block %d\n", grid.x, block.x);
+      // allocate host memory
+      size_t bytes = size * sizeof(int);
+      int *h_idata = (int *)malloc(bytes);
+      int *h_odata = (int *)malloc(grid.x * sizeof(int));
+      int *tmp = (int *)malloc(bytes);
 
-    // allocate host memory
-    size_t bytes = size * sizeof(int);
-    int *h_idata = (int *) malloc(bytes);
-    int *h_odata = (int *) malloc(grid.x * sizeof(int));
-    int *tmp     = (int *) malloc(bytes);
+      // initialize the array
+      for (int i = 0; i < size; i++)
+        h_idata[i] = (int)(rand() & 0xFF);
 
-    // initialize the array
-    for (int i = 0; i < size; i++)
-        h_idata[i] = (int)( rand() & 0xFF );
+      memcpy(tmp, h_idata, bytes);
 
-    memcpy (tmp, h_idata, bytes);
+      int gpu_sum = 0;
 
-    int gpu_sum = 0;
+      // allocate device memory
+      int *d_idata = NULL;
+      int *d_odata = NULL;
+      CHECK(cudaMalloc((void **)&d_idata, bytes));
+      CHECK(cudaMalloc((void **)&d_odata, grid.x * sizeof(int)));
 
-    // allocate device memory
-    int *d_idata = NULL;
-    int *d_odata = NULL;
-    CHECK(cudaMalloc((void **) &d_idata, bytes));
-    CHECK(cudaMalloc((void **) &d_odata, grid.x * sizeof(int)));
+      // cpu reduction
+      int cpu_sum = recursiveReduce(tmp, size);
+      printf("cpu reduce          : %d\n", cpu_sum);
 
-    // cpu reduction
-    int cpu_sum = recursiveReduce (tmp, size);
-    printf("cpu reduce          : %d\n", cpu_sum);
+      // reduce gmem
+      CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      reduceNeighboredGmem<<<grid.x, block>>>(d_idata, d_odata, size);
+      CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
+                       cudaMemcpyDeviceToHost));
+      gpu_sum = 0;
 
-    // reduce gmem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceNeighboredGmem<<<grid.x, block>>>(d_idata, d_odata, size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      for (int i = 0; i < grid.x; i++)
+        gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x; i++) gpu_sum += h_odata[i];
+      printf("reduceNeighboredGmem: %d <<<grid %d block %d>>>\n", gpu_sum,
+             grid.x, block.x);
 
-    printf("reduceNeighboredGmem: %d <<<grid %d block %d>>>\n", gpu_sum, grid.x,
-           block.x);
+      // reduce gmem
+      CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      reduceNeighboredSmemDyn<<<grid.x, block, blocksize * sizeof(int)>>>(d_idata, d_odata, size);
+      CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
+                       cudaMemcpyDeviceToHost));
+      gpu_sum = 0;
 
-    // reduce gmem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceNeighboredSmem<<<grid.x, block>>>(d_idata, d_odata, size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      for (int i = 0; i < grid.x; i++)
+        gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x; i++) gpu_sum += h_odata[i];
+      printf("reduceNeighboredSmem: %d <<<grid %d block %d>>>\n", gpu_sum,
+             grid.x, block.x);
 
-    printf("reduceNeighboredSmem: %d <<<grid %d block %d>>>\n", gpu_sum, grid.x,
-           block.x);
+      // reduce gmem
+      CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      reduceGmem<<<grid.x, block>>>(d_idata, d_odata, size);
+      CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
+                       cudaMemcpyDeviceToHost));
+      gpu_sum = 0;
 
-    // reduce gmem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceGmem<<<grid.x, block>>>(d_idata, d_odata, size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      for (int i = 0; i < grid.x; i++)
+        gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x; i++) gpu_sum += h_odata[i];
+      printf("reduceGmem          : %d <<<grid %d block %d>>>\n", gpu_sum,
+             grid.x, block.x);
 
-    printf("reduceGmem          : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x,
-           block.x);
+      // reduce smem
+      // exercise 5-8: comment this out, run dynamic allocation variations only.
+      // CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      // reduceSmem<<<grid.x, block>>>(d_idata, d_odata, size);
+      // CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
+      //                  cudaMemcpyDeviceToHost));
+      // gpu_sum = 0;
 
-    // reduce smem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceSmem<<<grid.x, block>>>(d_idata, d_odata, size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      // for (int i = 0; i < grid.x; i++)
+      //   gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x; i++) gpu_sum += h_odata[i];
+      // printf("reduceSmem          : %d <<<grid %d block %d>>>\n", gpu_sum,
+      //        grid.x, block.x);
 
-    printf("reduceSmem          : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x,
-           block.x);
+      // reduce smem
+      CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      reduceSmemDyn<<<grid.x, block, blocksize * sizeof(int)>>>(d_idata,
+                                                                d_odata, size);
+      CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
+                       cudaMemcpyDeviceToHost));
+      gpu_sum = 0;
 
-    // reduce smem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceSmemDyn<<<grid.x, block, blocksize*sizeof(int)>>>(d_idata, d_odata,
-            size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      for (int i = 0; i < grid.x; i++)
+        gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x; i++) gpu_sum += h_odata[i];
+      printf("reduceSmemDyn       : %d <<<grid %d block %d>>>\n", gpu_sum,
+             grid.x, block.x);
 
-    printf("reduceSmemDyn       : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x,
-           block.x);
+      // reduce gmem
+      CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      reduceGmemUnroll<<<grid.x / 4, block>>>(d_idata, d_odata, size);
+      CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 4 * sizeof(int),
+                       cudaMemcpyDeviceToHost));
+      gpu_sum = 0;
 
-    // reduce gmem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceGmemUnroll<<<grid.x / 4, block>>>(d_idata, d_odata, size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 4 * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      for (int i = 0; i < grid.x / 4; i++)
+        gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x / 4; i++) gpu_sum += h_odata[i];
+      printf("reduceGmemUnroll4   : %d <<<grid %d block %d>>>\n", gpu_sum,
+             grid.x / 4, block.x);
 
-    printf("reduceGmemUnroll4   : %d <<<grid %d block %d>>>\n", gpu_sum,
-            grid.x / 4, block.x);
+      // reduce smem
+      // CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      // reduceSmemUnroll<<<grid.x / 4, block>>>(d_idata, d_odata, size);
+      // CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 4 * sizeof(int),
+      //                  cudaMemcpyDeviceToHost));
+      // gpu_sum = 0;
 
-    // reduce smem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceSmemUnroll<<<grid.x / 4, block>>>(d_idata, d_odata, size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 4 * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      // for (int i = 0; i < grid.x / 4; i++)
+      //   gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x / 4; i++) gpu_sum += h_odata[i];
+      // printf("reduceSmemUnroll4   : %d <<<grid %d block %d>>>\n", gpu_sum,
+      //        grid.x / 4, block.x);
 
-    printf("reduceSmemUnroll4   : %d <<<grid %d block %d>>>\n", gpu_sum,
-            grid.x / 4, block.x);
+      // reduce smem
+      CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
+      reduceSmemUnrollDyn<<<grid.x / 4, block, blocksize * sizeof(int)>>>(
+          d_idata, d_odata, size);
+      CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 4 * sizeof(int),
+                       cudaMemcpyDeviceToHost));
+      gpu_sum = 0;
 
-    // reduce smem
-    CHECK(cudaMemcpy(d_idata, h_idata, bytes, cudaMemcpyHostToDevice));
-    reduceSmemUnrollDyn<<<grid.x / 4, block, DIM*sizeof(int)>>>(d_idata,
-            d_odata, size);
-    CHECK(cudaMemcpy(h_odata, d_odata, grid.x / 4 * sizeof(int),
-                     cudaMemcpyDeviceToHost));
-    gpu_sum = 0;
+      for (int i = 0; i < grid.x / 4; i++)
+        gpu_sum += h_odata[i];
 
-    for (int i = 0; i < grid.x / 4; i++) gpu_sum += h_odata[i];
+      printf("reduceSmemDynUnroll4: %d <<<grid %d block %d>>>\n", gpu_sum,
+             grid.x / 4, block.x);
 
-    printf("reduceSmemDynUnroll4: %d <<<grid %d block %d>>>\n", gpu_sum,
-            grid.x / 4, block.x);
+      // free host memory
+      free(h_idata);
+      free(h_odata);
 
-    // free host memory
-    free(h_idata);
-    free(h_odata);
+      // free device memory
+      CHECK(cudaFree(d_idata));
+      CHECK(cudaFree(d_odata));
 
-    // free device memory
-    CHECK(cudaFree(d_idata));
-    CHECK(cudaFree(d_odata));
+      // reset device
+      CHECK(cudaDeviceReset());
 
-    // reset device
-    CHECK(cudaDeviceReset());
+      // check the results
+      bResult = (gpu_sum == cpu_sum);
 
-    // check the results
-    bResult = (gpu_sum == cpu_sum);
-
-    if(!bResult) printf("Test failed!\n");
-
+      if (!bResult)
+        printf("Test failed!\n");
+    }
     return EXIT_SUCCESS;
 }

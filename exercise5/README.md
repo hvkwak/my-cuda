@@ -80,7 +80,7 @@ Refer to the kernel `setRowReadColDyn` in the ﬁle `checkSmemSquare.cu`. Make a
 ```
 
 ### ✅ Execution Results
-The store operation is expected to have bank conflict, whereas the load operations are coalesced. No profiling!
+The store operation is expected to have bank conflict, whereas the load operation is coalesced. No profiling!
 ```bash
 root@ubuntu:/workspace/cuda_programming_works# ./checkSmemSquare
 ./checkSmemSquare at device 0: NVIDIA GeForce RTX 4090 with Bank Mode:4-Byte <<< grid (1,1) block (4,4)>>>
@@ -110,7 +110,15 @@ set row read col pad:     0    4    8   12    1    5    9   13    2    6   10   
 set col read row pad:     0    4    8   12    1    5    9   13    2    6   10   14    3    7   11   15
 ```
 
+## 🧪 Exercise 5-8
+Refer to the ﬁle `reduceInteger.cu`. Test block sizes of 64, 128, 512, and 1024. Measure elapsed times for the kernels with `nvprof`. Determine the best execution conﬁguration.
 
+### 🔑 Key Ideas
+- The shared memory address space on an SM is partitioned among all resident thread blocks.
+- The size of shared memory per block affects the number of thread blocks fit on an SM, which affects therefore the level of occupancy.
+
+### ✅ Execution Results
+`TODO`
 
 
 <!-------------------------------
