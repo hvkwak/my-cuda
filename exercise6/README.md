@@ -5,7 +5,7 @@
 - In *grid level concurrency*, multiple kernel launches are executed simultaneously on a single device that can lead to better device utilization.
 - At the core of this *grid level concurrency*, there are sequences of CUDA operations, namely CUDA *streams*. Streams can be used to implement pipelining, double buffering, or potential concurrent execution of kernels at the granularity of CUDA API calls. The functions in the CUDA API can typically classified as either synchronous(host thread blocking, the `NULL` stream) or asynchronous(returns control to the host immediately after being called, `non-NULL` streams). 
 - Non-NULL streams can be further classified into two types: Blocking streams, Non-Blocking streams. (Streams can block other streams, not only the host!)
-- Understanding the characteristics of these `NULL` or `non-NULL` streams is the key when it comes to stream synchronization.
+- Understanding the characteristics of these `NULL` or `non-NULL` streams is the key when it comes to understanding stream synchronization, concurrrent kernel execution, overlapping kernel execution, and overlapping GPU and CPU.
 
 ## 📌 Characteristics of Streams
 - It is firstly important to know whether it's case about the blocking (or non-blocking) with respect to the *host* (thread) OR with respect to *other streams*! Streams can block both of them!
@@ -64,12 +64,50 @@ The difference is that those explicit synchronization functions are inserted man
 For example, functions like `cudaMemcpy`, `cudaFree` are fundamentally intended for tasks such as data transfer or memory deallocation, but create implicit host-device synchronization points.
 
 ## 🧪 Exercise 6-5
-`TODO`
+How do depth-ﬁrst and breadth-ﬁrst ordering differ when executing work from CUDA streams? In particular, how does the Fermi architecture beneﬁt from breadth-ﬁrst ordering of work?
+
+### 🔑 Answer
+- Depth-first ordering dispatches the full set of operations for a stream before starting on the next stream. When using breadth-first order, operations assigned to different streams are enqueued in an alternating sequence.
+- Depth-first ordering for the Fermi architecture leads to false-dependencies that the preceding streams block successive streams, as all streams are multiplexed into a single hardware work queue. Breadth-first ordering ensures that adjacent tasks in the single work queue are from different streams. There's no false-dependencies between any adjacent pairs of tasks that achieves concurrent execution.<br>
+  <div style="display: inline-block; vertical-align: top;">
+    <img src="images/Figure6-7.png" alt="Figure 6-7. Depth-first Odering (Cheng et al.)" width="500"><br>
+    <strong>Figure 6-7. Depth-first Ordering for the Fermi architecture. Different colors represent different streams. 4 sequential kernels per stream are assumed. Kernels in the same stream are dependent. The last and the first kernel from two different streams have no dependencies for concurrrent execution. (Cheng et al.)</strong><br>
+  </div>
+    <div style="display: inline-block; vertical-align: top;">
+    <img src="images/Figure6-7.png" alt="Figure 6-7. Depth-first Odering (Cheng et al.)" width="500"><br>
+    <strong>Figure 6-8. Breadth-first Ordering for the Fermi architecture. No false-dependencies exist for adjacent tasks in the work queue. (Cheng et al.)</strong><br>
+  </div>
+
+## 🧪 Exercise 6-6
+List the different types of CUDA overlapping. Describe the techniques that would be required to implement each.
+
+### 🔑 Answer
+There are 4 different types of coarse-grain concurrency introduced within this book:<br>
+1. Overlapped host computation and device computation,<br>
+2. Overlapped host computation and host-device data transfer,<br>
+3. Overlapped host-device data transfer and device computation, and<br>
+4. Concurrent device computation.<br>
+
+*Overlapped host computation and device computation* can be implemented by launching asynchronous operations, while the host executes its works. Note that kernel execution on device is asynchronous. 
+
+*Overlapped host computation and host-device data transfer* is implemented by launching asynchronous data transfers in streams, while the host executes its works. 
+
+*Overlapped host-device data transfer and device computation* is implemented by launching both an asynchronous kernel execution and an asynchronous data transfer, each of them in different CUDA streams for overlapping.
+
+*Concurrent device computation* is implemented by launching multiple asynchronous kernels in multiple different streams. Note that enough computational resources without dependencies between kernels should be available for concurrent execution.
+
+## 🧪 Exercise 6-8
+Draw the timeline produced by the following command on a Kepler device:
+``` bash
+$ nvvp ./simpleHyperDepth
+```
+Assume that 32 streams are used. Explain the reasoning behind the timeline you drew.
 
 ### 🔑 Key Ideas
 - 
 
-
+## 🧪 Exercise 6-9
+Refer to `simpleCallback.cu`, and put the callback point after the second kernel launch. Run it with `nvvp` and observe the difference.
 
 <!-------------------------------
 
