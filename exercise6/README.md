@@ -87,14 +87,10 @@ There are 4 different types of coarse-grain concurrency introduced within this b
 2. Overlapped host computation and host-device data transfer,<br>
 3. Overlapped host-device data transfer and device computation, and<br>
 4. Concurrent device computation.<br>
-
-*Overlapped host computation and device computation* can be implemented by launching asynchronous operations, while the host executes its works. Note that kernel execution on device is asynchronous. 
-
-*Overlapped host computation and host-device data transfer* is implemented by launching asynchronous data transfers in streams, while the host executes its works. 
-
-*Overlapped host-device data transfer and device computation* is implemented by launching both an asynchronous kernel execution and an asynchronous data transfer, each of them in different CUDA streams for overlapping.
-
-*Concurrent device computation* is implemented by launching multiple asynchronous kernels in multiple different streams. Note that enough computational resources without dependencies between kernels should be available for concurrent execution.
+- *Overlapped host computation and device computation* can be implemented by launching asynchronous operations, while the host executes its works. Note that kernel execution on device is asynchronous.
+- *Overlapped host computation and host-device data transfer* is implemented by launching asynchronous data transfers in streams, while the host executes its works.
+- *Overlapped host-device data transfer and device computation* is implemented by launching both an asynchronous kernel execution and an asynchronous data transfer, each of them in different CUDA streams for overlapping.
+- *Concurrent device computation* is implemented by launching multiple asynchronous kernels in multiple different streams. Note that enough computational resources without dependencies between kernels should be available for concurrent execution.
 
 ## 🧪 Exercise 6-8
 Draw the timeline produced by the following command on a Kepler device:

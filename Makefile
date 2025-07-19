@@ -101,3 +101,20 @@ all: ${C_APPS} ${CU_APPS}
 clean:
 	rm -f ${CU_APPS} ${C_APPS}
 endif
+
+## exercise6
+ifeq ($(EXERCISE), exercise6)
+CU_APPS=asyncAPI simpleCallback simpleHyperqBreadth simpleHyperqDependence \
+        simpleHyperqDepth simpleHyperqOpenmp simpleMultiAddBreadth \
+        simpleMultiAddDepth
+C_APPS=
+NVCC_FLAGS = -O2 -Wno-deprecated-gpu-targets -Wno-deprecated-declarations -Xcompiler -fopenmp -lgomp -diag-suppress 2464
+all: ${C_APPS} ${CU_APPS}
+
+%: $(EXERCISE)/%.cu
+	nvcc $(NVCC_FLAGS) -o $@ $<
+%: $(EXERCISE)/%.c
+	gcc -O2 -std=c99 -o $@ $<
+clean:
+	rm -f ${CU_APPS} ${C_APPS}
+endif
