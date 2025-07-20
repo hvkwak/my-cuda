@@ -95,15 +95,40 @@ There are 4 different types of coarse-grain concurrency introduced within this b
 ## 🧪 Exercise 6-8
 Draw the timeline produced by the following command on a Kepler device:
 ``` bash
-$ nvvp ./simpleHyperDepth
+$ nvvp ./simpleHyperqDepth
 ```
 Assume that 32 streams are used. Explain the reasoning behind the timeline you drew.
 
 ### 🔑 Key Ideas
-- 
+- Multiple hardware work queues(`HyperQ`) are available for devices Kepler or later. Although `simpleHyperqDepth` dispatches multiple streams in depth-first fashion, its scheduler is expected to remove false-dependencies and to find possible concurrent execution.
+- Because each kernel launch is asynchronous with respect to the host, dispatching multiple kernels to different streams using a single host thread at approximately the same time may be possible.
+- Assuming that 32 streams are used, concurrent execution of 32 streams is expected.
 
-## 🧪 Exercise 6-9
-Refer to `simpleCallback.cu`, and put the callback point after the second kernel launch. Run it with `nvvp` and observe the difference.
+### 🛠️ Implementation Details
+One key detail in `cuda_12.6` was to keep an additional branch so that the kernel will not be optimized away.
+``` cuda
+__global__ void kernel_1()
+{
+    double sum = 0.0;
+
+    for(int i = 0; i < N; i++)
+    {
+        sum = sum + tan(0.1) * tan(0.1);
+        // Exercise 6-8: Added branch so that the kernel will not be optimized away
+        if (i == 100) printf("100 in kernel_1 reached.\n");
+    }
+}
+```
+
+To profile the application, run
+``` bash
+nsys profile -o simpleHyperqDepth ./simpleHyperqDepth
+```
+and load `simpleHyperqDepth.nsys-rep` in `nsys-ui`
+
+### ✅ Execution Results
+CUDA, in fact, doesn't launch all kernels at once, but the delay between kernel launches on the host side causes the streams to fill the GPU sequentially. The host code launches kernels, even if fast, that are not instantaneous and don't overlap. (See Figure) The first stream turns out to be dominant at the start, then at the point of `kernel_4` in the first stream all 32 streams run concurrently. Host code launches with multiple host threads using OpenMP could be following tasks to see if all 32 streams run concurrently from the beginning.
+
 
 <!-------------------------------
 

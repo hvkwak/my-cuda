@@ -12,8 +12,8 @@
  * scheduling of these kernels simpler to visualize in the Visual Profiler.
  */
 
-#define N 300000
-#define NSTREAM 4
+#define N 300000000
+#define NSTREAM 32
 
 __global__ void kernel_1()
 {
@@ -22,6 +22,8 @@ __global__ void kernel_1()
     for(int i = 0; i < N; i++)
     {
         sum = sum + tan(0.1) * tan(0.1);
+        // Exercise 6-8: Added branch so that the kernel will not be optimized away
+        if (i == 100) printf("100 in kernel_1 reached.\n");
     }
 }
 
@@ -32,6 +34,7 @@ __global__ void kernel_2()
     for(int i = 0; i < N; i++)
     {
         sum = sum + tan(0.1) * tan(0.1);
+        if (i == 100) printf("100 in kernel_2 reached.\n");
     }
 }
 
@@ -42,6 +45,7 @@ __global__ void kernel_3()
     for(int i = 0; i < N; i++)
     {
         sum = sum + tan(0.1) * tan(0.1);
+        if (i == 100) printf("100 in kernel_3 reached.\n");
     }
 }
 
@@ -52,6 +56,7 @@ __global__ void kernel_4()
     for(int i = 0; i < N; i++)
     {
         sum = sum + tan(0.1) * tan(0.1);
+        if (i == 100) printf("100 in kernel_4 reached.\n");
     }
 }
 
@@ -61,8 +66,11 @@ int main(int argc, char **argv)
     int isize = 1;
     int iblock = 1;
     int bigcase = 0;
+    //t N;  // dynamic instead of static
 
     // get argument from command line
+    //if (argc > 1) N = atoi(argv[1]);
+
     if (argc > 1) n_streams = atoi(argv[1]);
 
     if (argc > 2) bigcase = atoi(argv[2]);
@@ -80,6 +88,7 @@ int main(int argc, char **argv)
     CHECK(cudaGetDeviceProperties(&deviceProp, dev));
     printf("> Using Device %d: %s with num_streams=%d\n", dev, deviceProp.name,
            n_streams);
+    printf("> Addition %d times in each kernel\n", N);
     CHECK(cudaSetDevice(dev));
 
     // check if device support hyper-q
