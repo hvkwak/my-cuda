@@ -20,5 +20,5 @@ bash ./my_ncu.sh --kernel-name your_kernel ./your_cuda_app
 * [exercise3](exercise3/): CUDA Execution Model. Introduction to Performance Metrics. General reducing, `Loops Unrolling` and its performance improvements @ `reduceInteger.cu`, `reduceFloat.cu`. Recursive calls in CUDA @ `nestedReduce.cu`.
 * [exercise4](exercise4/): Global Memory. Memory transfers using `pageable memory`, `pinned memory`, or `zero copy` @ `memTransfer.cu`, `pinMemTransfer.cu`. Aligned and coalesced memory access patterns @ `readSegment.cu`, `sumArrayZerocpyUVA.cu`. `matrix transpose` example for memory bandwidth check @ `transpose.cu`. performance gain with L1 Cache.
 * [exercise5](exercise5/): Shared Memory. Row-major or column-major memory access operations using Shared Memory @ `checkSmemSquare.cu`, Testing `reduceInteger.cu` with different blocksize configuration.
-* [exercise6](exercise6/): Streams and Concurrency. Introduction to CUDA Stream. Stream Synchronization. `TODO`
-* [exercise8](exercise8/): GPU-Accelerated CUDA Libraries and OpenACC. `TODO`
+* [exercise6](exercise6/): Streams and Concurrency. Introduction to CUDA Streams. Stream Synchronization. Profiling with `Nsight Systems` timeline
+* [exercise8](exercise8/): GPU-Accelerated CUDA Libraries and OpenACC.

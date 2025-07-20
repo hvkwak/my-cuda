@@ -7,7 +7,7 @@
 - Non-NULL streams can be further classified into two types: Blocking streams, Non-Blocking streams. (Streams can block other streams, not only the host!)
 - Understanding the characteristics of these `NULL` or `non-NULL` streams is the key when it comes to understanding stream synchronization, concurrrent kernel execution, overlapping kernel execution, and overlapping GPU and CPU.
 
-## 📌 Characteristics of Streams
+## 📌 Stream Synchronization Highlights
 - It is firstly important to know whether it's case about the blocking (or non-blocking) with respect to the *host* (thread) OR with respect to *other streams*! Streams can block both of them!
 - All operations in non-default streams (`non-NULL`) are non-blocking with respect to the *host*.
 - Kernel launches are always, whether `NULL` or `non-NULL` stream, asynchronous with respect to the *host*.
@@ -70,11 +70,11 @@ How do depth-ﬁrst and breadth-ﬁrst ordering differ when executing work from 
 - Depth-first ordering dispatches the full set of operations for a stream before starting on the next stream. When using breadth-first order, operations assigned to different streams are enqueued in an alternating sequence.
 - Depth-first ordering for the Fermi architecture leads to false-dependencies that the preceding streams block successive streams, as all streams are multiplexed into a single hardware work queue. Breadth-first ordering ensures that adjacent tasks in the single work queue are from different streams. There's no false-dependencies between any adjacent pairs of tasks that achieves concurrent execution.<br>
   <div style="display: inline-block; vertical-align: top;">
-    <img src="images/Figure6-7.png" alt="Figure 6-7. Depth-first Odering (Cheng et al.)" width="500"><br>
+    <img src="images/Figure6-7.png" alt="Figure 6-7. Depth-first Ordering (Cheng et al.)" width="500"><br>
     <strong>Figure 6-7. Depth-first Ordering for the Fermi architecture. Different colors represent different streams. 4 sequential kernels per stream are assumed. Kernels in the same stream are dependent. The last and the first kernel from two different streams have no dependencies for concurrrent execution. (Cheng et al.)</strong><br>
   </div>
     <div style="display: inline-block; vertical-align: top;">
-    <img src="images/Figure6-7.png" alt="Figure 6-7. Depth-first Odering (Cheng et al.)" width="500"><br>
+    <img src="images/Figure6-8.png" alt="Figure 6-8. Breadth-first Ordering (Cheng et al.)" width="500"><br>
     <strong>Figure 6-8. Breadth-first Ordering for the Fermi architecture. No false-dependencies exist for adjacent tasks in the work queue. (Cheng et al.)</strong><br>
   </div>
 
@@ -102,11 +102,11 @@ Assume that 32 streams are used. Explain the reasoning behind the timeline you d
 ### 🔑 Key Ideas
 - Multiple hardware work queues(`HyperQ`) are available for devices Kepler or later. Although `simpleHyperqDepth` dispatches multiple streams in depth-first fashion, its scheduler is expected to remove false-dependencies and to find possible concurrent execution.
 - Because each kernel launch is asynchronous with respect to the host, dispatching multiple kernels to different streams using a single host thread at approximately the same time may be possible.
-- Assuming that 32 streams are used, concurrent execution of 32 streams is expected. (See diagramm for Exercise 6-8)<br>
+- Assuming that 32 streams are used, concurrent execution of 32 streams is expected. (See the diagramm for Exercise 6-8 below)<br>
   </div>
     <div style="display: inline-block; vertical-align: top;">
     <img src="images/Exercise6-8_Diagramm.png" alt="Diagramm for Exercise 6-8" width="500"><br>
-    <strong>Diagramm for Exercise 6-8. Expected Concurrent Execution with 32 streams on a Kepler device. </strong><br>
+    <strong>Diagramm for Exercise 6-8. Concurrent execution with 32 streams on a Kepler device is expected. </strong><br>
   </div>
   
 ### 🛠️ Implementation Details
@@ -132,11 +132,11 @@ nsys profile -o simpleHyperqDepth ./simpleHyperqDepth
 and load `simpleHyperqDepth.nsys-rep` in `nsys-ui`
 
 ### ✅ Execution Results
-CUDA, in fact, doesn't launch all kernels at once, but the delay between kernel launches on the host side causes the streams to fill the GPU sequentially. The host code launches kernels, even if fast, that are not instantaneous and don't overlap. (See exported profile below) The first stream turns out to be dominant at the start, then at the point of `kernel_4` in the first stream all 32 streams run concurrently. Host code launches with multiple host threads using OpenMP could be following tasks to see if all 32 streams run concurrently from the beginning.<br>
+CUDA, in fact, doesn't launch all kernels at once, but the delay between kernel launches on the host side causes the streams to fill the GPU sequentially. The host code launches kernels, even if fast, that are not instantaneous and don't overlap. (See exported profile below) The first stream turns out to be dominant at the start, then at the point of `kernel_4` in the first stream the application reaches full concurrent execution. Host code launches with multiple host threads using `OpenMP` could be following tasks to see if all 32 streams run concurrently from the beginning of the application.<br>
   </div>
     <div style="display: inline-block; vertical-align: top;">
     <img src="images/Exercise6-8_nsys.png" alt="Profile Execution for Exercise 6-8" width="500"><br>
-    <strong>Exported Profile for Execution for Exercise 6-8. Note that the first 3 kernels of the first stream `stream13` is followed by concurrent kernel executions of other streams. </strong><br>
+    <strong>Exported Profile for Execution for Exercise 6-8. Note that the first 3 kernels of the first stream `stream13` is followed by a full concurrent execution.</strong><br>
   </div>
 
 <!-------------------------------
