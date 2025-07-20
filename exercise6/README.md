@@ -102,8 +102,13 @@ Assume that 32 streams are used. Explain the reasoning behind the timeline you d
 ### 🔑 Key Ideas
 - Multiple hardware work queues(`HyperQ`) are available for devices Kepler or later. Although `simpleHyperqDepth` dispatches multiple streams in depth-first fashion, its scheduler is expected to remove false-dependencies and to find possible concurrent execution.
 - Because each kernel launch is asynchronous with respect to the host, dispatching multiple kernels to different streams using a single host thread at approximately the same time may be possible.
-- Assuming that 32 streams are used, concurrent execution of 32 streams is expected.
-
+- Assuming that 32 streams are used, concurrent execution of 32 streams is expected. (See diagramm for Exercise 6-8)<br>
+  </div>
+    <div style="display: inline-block; vertical-align: top;">
+    <img src="images/Exercise6-8_Diagramm.png" alt="Diagramm for Exercise 6-8" width="500"><br>
+    <strong>Diagramm for Exercise 6-8. Expected Concurrent Execution with 32 streams on a Kepler device. </strong><br>
+  </div>
+  
 ### 🛠️ Implementation Details
 One key detail in `cuda_12.6` was to keep an additional branch so that the kernel will not be optimized away.
 ``` cuda
@@ -127,8 +132,12 @@ nsys profile -o simpleHyperqDepth ./simpleHyperqDepth
 and load `simpleHyperqDepth.nsys-rep` in `nsys-ui`
 
 ### ✅ Execution Results
-CUDA, in fact, doesn't launch all kernels at once, but the delay between kernel launches on the host side causes the streams to fill the GPU sequentially. The host code launches kernels, even if fast, that are not instantaneous and don't overlap. (See Figure) The first stream turns out to be dominant at the start, then at the point of `kernel_4` in the first stream all 32 streams run concurrently. Host code launches with multiple host threads using OpenMP could be following tasks to see if all 32 streams run concurrently from the beginning.
-
+CUDA, in fact, doesn't launch all kernels at once, but the delay between kernel launches on the host side causes the streams to fill the GPU sequentially. The host code launches kernels, even if fast, that are not instantaneous and don't overlap. (See exported profile below) The first stream turns out to be dominant at the start, then at the point of `kernel_4` in the first stream all 32 streams run concurrently. Host code launches with multiple host threads using OpenMP could be following tasks to see if all 32 streams run concurrently from the beginning.<br>
+  </div>
+    <div style="display: inline-block; vertical-align: top;">
+    <img src="images/Exercise6-8_nsys.png" alt="Profile Execution for Exercise 6-8" width="500"><br>
+    <strong>Exported Profile for Execution for Exercise 6-8. Note that the first 3 kernels of the first stream `stream13` is followed by concurrent kernel executions of other streams. </strong><br>
+  </div>
 
 <!-------------------------------
 
