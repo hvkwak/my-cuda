@@ -1,5 +1,5 @@
 # cuda_programming_works
-My CUDA programming exercises codes per chapter while reading the book *Professional CUDA C Programming* by John Cheng, Max Grossman, and Ty McKercher.
+My CUDA C programming exercises per chapter of the book *Professional CUDA C Programming* by John Cheng, Max Grossman, and Ty McKercher.
 
 ## Executing a program
 Compile and execute the programming exercise of your choice at the project root, e.g. exercise1 and `main.cu`
