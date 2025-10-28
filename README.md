@@ -1,13 +1,13 @@
 # My CUDA
 My CUDA C programming exercises per chapter of the book *Professional CUDA C Programming* by John Cheng, Max Grossman, and Ty McKercher.
 
-## Executing a program
-Compile and execute the programming exercise of your choice at the project root, e.g. exercise1 and `main.cu`
+## Compilation and Run
+Compile and execute the program of your choice at the project root, e.g. exercise1 and `main.cu`
 ```
 make EXERCISE=exercise1 && ./main
 ```
 
-## Profiling a program
+## Profiling
 The command-line profiling tools such as `ncu`(for `CUDA 11.0.194+` ) or `nvprof`(older versions) can help provide detailed insights into kernel performance. For somewhat simpler/customized command-line profiling, run
 ```
 bash ./my_ncu.sh --kernel-name your_kernel ./your_cuda_app
