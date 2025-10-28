@@ -1,4 +1,4 @@
-# cuda_programming_works
+# My CUDA
 My CUDA C programming exercises per chapter of the book *Professional CUDA C Programming* by John Cheng, Max Grossman, and Ty McKercher.
 
 ## Executing a program
