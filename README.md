@@ -1,4 +1,4 @@
-# My CUDA
+# Professional CUDA C Programming
 My CUDA C programming exercises per chapter of the book *Professional CUDA C Programming* by John Cheng, Max Grossman, and Ty McKercher.
 
 ## Compilation and Run
